@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Clientist",
+    "slug": "clientist",
+    "scheme": "clientist",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android", "web"]
+  }
+}
