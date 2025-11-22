@@ -1,54 +1,115 @@
 import { supabase } from '../lib/supabase'
-import { load, save } from '../lib/storage'
-import { nanoid } from 'nanoid/non-secure'
+import { Trip, TripFormData, TripFilters } from '../types/trips'
 
-export type TripStatus = 'planned' | 'confirmed' | 'completed' | 'cancelled'
-export type Trip = {
-  id: string
-  user_id: string
-  client_id?: string
-  destination: string
-  start_date?: string
-  end_date?: string
-  status: TripStatus
-  price?: number
-  notes?: string
-  created_at?: string
+export async function getTrips(userId: string, filters?: TripFilters) {
+  try {
+    let query = supabase
+      .from('travel_trips')
+      .select(`
+        *,
+        client:travel_clients(id, full_name, phone_number, email)
+      `)
+      .eq('created_by', userId)
+      .order('departure_date', { ascending: false })
+
+    if (filters?.search_term) {
+      query = query.or(`departure_city.ilike.%${filters.search_term}%,destination_city.ilike.%${filters.search_term}%`)
+    }
+
+    if (filters?.client_id) {
+      query = query.eq('client_id', filters.client_id)
+    }
+
+    if (filters?.from_date) {
+      query = query.gte('departure_date', filters.from_date)
+    }
+
+    if (filters?.to_date) {
+      query = query.lte('departure_date', filters.to_date)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return { data: data as Trip[], error: null }
+  } catch (error) {
+    console.error('Error fetching trips:', error)
+    return { data: null, error }
+  }
 }
 
-const KEY = 'clientist_trips'
-
-export async function listTrips(userId: string): Promise<Trip[]> {
+export async function getTripById(id: string) {
   try {
-    const { data, error } = await supabase.from('trips').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('travel_trips')
+      .select(`
+        *,
+        client:travel_clients(id, full_name, phone_number, email)
+      `)
+      .eq('id', id)
+      .single()
+
     if (error) throw error
-    return (data || []) as Trip[]
-  } catch {
-    const all = await load<Trip[]>(KEY, [])
-    return all.filter(t => t.user_id === userId)
+    return { data: data as Trip, error: null }
+  } catch (error) {
+    console.error('Error fetching trip:', error)
+    return { data: null, error }
   }
 }
 
-export async function createTrip(userId: string, partial: Partial<Trip>): Promise<Trip> {
-  const trip: Trip = {
-    id: nanoid(),
-    user_id: userId,
-    client_id: partial.client_id,
-    destination: partial.destination || '',
-    start_date: partial.start_date,
-    end_date: partial.end_date,
-    status: partial.status || 'planned',
-    price: partial.price,
-    notes: partial.notes,
-    created_at: new Date().toISOString()
-  }
+export async function createTrip(userId: string, tripData: TripFormData) {
   try {
-    const { error } = await supabase.from('trips').insert(trip)
+    const { data, error } = await supabase
+      .from('travel_trips')
+      .insert({
+        ...tripData,
+        created_by: userId,
+      })
+      .select(`
+        *,
+        client:travel_clients(id, full_name, phone_number, email)
+      `)
+      .single()
+
     if (error) throw error
-  } catch {
-    const all = await load<Trip[]>(KEY, [])
-    const next = [trip, ...all]
-    await save(KEY, next)
+    return { data: data as Trip, error: null }
+  } catch (error) {
+    console.error('Error creating trip:', error)
+    return { data: null, error }
   }
-  return trip
+}
+
+export async function updateTrip(id: string, tripData: Partial<TripFormData>) {
+  try {
+    const { data, error } = await supabase
+      .from('travel_trips')
+      .update(tripData)
+      .eq('id', id)
+      .select(`
+        *,
+        client:travel_clients(id, full_name, phone_number, email)
+      `)
+      .single()
+
+    if (error) throw error
+    return { data: data as Trip, error: null }
+  } catch (error) {
+    console.error('Error updating trip:', error)
+    return { data: null, error }
+  }
+}
+
+export async function deleteTrip(id: string) {
+  try {
+    const { error } = await supabase
+      .from('travel_trips')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+    return { error: null }
+  } catch (error) {
+    console.error('Error deleting trip:', error)
+    return { error }
+  }
 }

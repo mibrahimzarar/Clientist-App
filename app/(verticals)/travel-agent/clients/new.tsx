@@ -7,13 +7,38 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCreateClient } from '../../../../src/hooks/useTravelAgent'
 import { PackageType, LeadSource, ClientStatus, PriorityTag } from '../../../../src/types/travelAgent'
 
+const packageOptions = [
+  { value: 'umrah_package', label: 'Umrah Package', icon: 'airplane' },
+  { value: 'tourist_visa', label: 'Tourist Visa', icon: 'document-text' },
+  { value: 'ticketing', label: 'Ticketing', icon: 'ticket' },
+  { value: 'visit_visa', label: 'Visit Visa', icon: 'briefcase' },
+]
+
+const leadSourceOptions = [
+  { value: 'facebook', label: 'Facebook', icon: 'logo-facebook' },
+  { value: 'referral', label: 'Referral', icon: 'people' },
+  { value: 'walk_in', label: 'Walk-in', icon: 'walk' },
+  { value: 'website', label: 'Website', icon: 'globe' },
+]
+
+const priorityOptions = [
+  { value: 'normal', label: 'Normal', icon: 'flag-outline', color: '#10B981' },
+  { value: 'priority', label: 'Priority', icon: 'flag', color: '#F59E0B' },
+  { value: 'urgent', label: 'Urgent', icon: 'warning', color: '#EF4444' },
+  { value: 'vip', label: 'VIP', icon: 'star', color: '#8B5CF6' },
+]
+
 export default function NewClient() {
+  const insets = useSafeAreaInsets()
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
@@ -30,7 +55,7 @@ export default function NewClient() {
 
   const handleSubmit = async () => {
     if (!formData.full_name.trim() || !formData.phone_number.trim() || !formData.country.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields')
+      Alert.alert('Required Fields', 'Please fill in all required fields (Name, Phone, Country)')
       return
     }
 
@@ -40,159 +65,288 @@ export default function NewClient() {
         { text: 'OK', onPress: () => router.back() }
       ])
     } catch (error) {
-      Alert.alert('Error', 'Failed to create client')
+      Alert.alert('Error', 'Failed to create client. Please try again.')
     }
   }
 
+  const completionPercentage = () => {
+    const fields = [
+      formData.full_name,
+      formData.phone_number,
+      formData.country,
+      formData.email,
+      formData.notes,
+    ]
+    const filled = fields.filter(f => f && f.trim()).length
+    return Math.round((filled / fields.length) * 100)
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      {/* Header with Gradient */}
+      <LinearGradient
+        colors={['#4F46E5', '#7C3AED']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Client</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>New Client</Text>
+          <Text style={styles.headerSubtitle}>Add a new client to your portfolio</Text>
+        </View>
         <View style={{ width: 40 }} />
+      </LinearGradient>
+
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${completionPercentage()}%` }]} />
+        </View>
+        <Text style={styles.progressText}>{completionPercentage()}% Complete</Text>
       </View>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.full_name}
-            onChangeText={(text) => setFormData({ ...formData, full_name: text })}
-            placeholder="Enter client's full name"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.formContainer}>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.phone_number}
-            onChangeText={(text) => setFormData({ ...formData, phone_number: text })}
-            placeholder="Enter phone number"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-          />
-        </View>
+        {/* Basic Information Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="person-circle" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Basic Information</Text>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
-            placeholder="Enter email address"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="email-address"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Full Name <Text style={styles.required}>*</Text>
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={formData.full_name}
+                onChangeText={(text) => setFormData({ ...formData, full_name: text })}
+                placeholder="Enter client's full name"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Country <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.country}
-            onChangeText={(text) => setFormData({ ...formData, country: text })}
-            placeholder="Enter country"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Phone Number <Text style={styles.required}>*</Text>
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="call-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={formData.phone_number}
+                onChangeText={(text) => setFormData({ ...formData, phone_number: text })}
+                placeholder="+1 234 567 8900"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
 
-        <Text style={styles.sectionTitle}>Package Information</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                placeholder="client@example.com"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Package Type</Text>
-          <View style={styles.selectContainer}>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.package_type === 'umrah_package' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, package_type: 'umrah_package' })}
-            >
-              <Text style={[styles.selectOptionText, formData.package_type === 'umrah_package' && styles.selectOptionTextActive]}>
-                Umrah Package
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.package_type === 'tourist_visa' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, package_type: 'tourist_visa' })}
-            >
-              <Text style={[styles.selectOptionText, formData.package_type === 'tourist_visa' && styles.selectOptionTextActive]}>
-                Tourist Visa
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.package_type === 'ticketing' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, package_type: 'ticketing' })}
-            >
-              <Text style={[styles.selectOptionText, formData.package_type === 'ticketing' && styles.selectOptionTextActive]}>
-                Ticketing
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.package_type === 'visit_visa' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, package_type: 'visit_visa' })}
-            >
-              <Text style={[styles.selectOptionText, formData.package_type === 'visit_visa' && styles.selectOptionTextActive]}>
-                Visit Visa
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Country <Text style={styles.required}>*</Text>
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="location-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={formData.country}
+                onChangeText={(text) => setFormData({ ...formData, country: text })}
+                placeholder="Enter country"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
           </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Lead Source</Text>
-          <View style={styles.selectContainer}>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.lead_source === 'facebook' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, lead_source: 'facebook' })}
-            >
-              <Text style={[styles.selectOptionText, formData.lead_source === 'facebook' && styles.selectOptionTextActive]}>
-                Facebook
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.lead_source === 'referral' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, lead_source: 'referral' })}
-            >
-              <Text style={[styles.selectOptionText, formData.lead_source === 'referral' && styles.selectOptionTextActive]}>
-                Referral
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.selectOption, formData.lead_source === 'walk_in' && styles.selectOptionActive]}
-              onPress={() => setFormData({ ...formData, lead_source: 'walk_in' })}
-            >
-              <Text style={[styles.selectOptionText, formData.lead_source === 'walk_in' && styles.selectOptionTextActive]}>
-                Walk-in
-              </Text>
-            </TouchableOpacity>
+        {/* Package Type Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="cube" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Package Type</Text>
+          </View>
+
+          <View style={styles.optionsGrid}>
+            {packageOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.optionCard,
+                  formData.package_type === option.value && styles.optionCardActive
+                ]}
+                onPress={() => setFormData({ ...formData, package_type: option.value as PackageType })}
+              >
+                {formData.package_type === option.value && (
+                  <LinearGradient
+                    colors={['#4F46E5', '#7C3AED']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.optionGradient}
+                  />
+                )}
+                <Ionicons
+                  name={option.icon as any}
+                  size={24}
+                  color={formData.package_type === option.value ? '#fff' : '#6B7280'}
+                  style={styles.optionIcon}
+                />
+                <Text style={[
+                  styles.optionText,
+                  formData.package_type === option.value && styles.optionTextActive
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Additional Information</Text>
+        {/* Lead Source Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="trending-up" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Lead Source</Text>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Notes</Text>
+          <View style={styles.optionsGrid}>
+            {leadSourceOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.optionCard,
+                  formData.lead_source === option.value && styles.optionCardActive
+                ]}
+                onPress={() => setFormData({ ...formData, lead_source: option.value as LeadSource })}
+              >
+                {formData.lead_source === option.value && (
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.optionGradient}
+                  />
+                )}
+                <Ionicons
+                  name={option.icon as any}
+                  size={24}
+                  color={formData.lead_source === option.value ? '#fff' : '#6B7280'}
+                  style={styles.optionIcon}
+                />
+                <Text style={[
+                  styles.optionText,
+                  formData.lead_source === option.value && styles.optionTextActive
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Priority Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="flag" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Priority Level</Text>
+          </View>
+
+          <View style={styles.priorityOptions}>
+            {priorityOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.priorityChip,
+                  formData.priority_tag === option.value && { backgroundColor: option.color }
+                ]}
+                onPress={() => setFormData({ ...formData, priority_tag: option.value as PriorityTag })}
+              >
+                <Ionicons
+                  name={option.icon as any}
+                  size={16}
+                  color={formData.priority_tag === option.value ? '#fff' : '#6B7280'}
+                />
+                <Text style={[
+                  styles.priorityText,
+                  formData.priority_tag === option.value && styles.priorityTextActive
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Notes Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="document-text" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Additional Notes</Text>
+          </View>
+
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={styles.textArea}
             value={formData.notes}
             onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            placeholder="Add any additional notes..."
+            placeholder="Add any additional notes about this client..."
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={4}
+            textAlignVertical="top"
           />
         </View>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Create Client</Text>
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Floating Submit Button */}
+      <View style={styles.submitContainer}>
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={createClient.isPending}
+        >
+          <LinearGradient
+            colors={['#4F46E5', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.submitGradient}
+          >
+            {createClient.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.submitText}>Create Client</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   )
 }
 
@@ -203,33 +357,87 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingVertical: 20,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   backButton: {
     padding: 8,
   },
+  headerContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 2,
+  },
+  progressContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4F46E5',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  scrollView: {
+    flex: 1,
   },
   formContainer: {
-    padding: 24,
+    padding: 20,
   },
-  sectionTitle: {
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cardTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 16,
-    marginTop: 24,
+    marginLeft: 12,
   },
-  inputContainer: {
-    marginBottom: 20,
+  inputGroup: {
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
@@ -240,60 +448,124 @@ const styles = StyleSheet.create({
   required: {
     color: '#EF4444',
   },
-  input: {
-    backgroundColor: '#FFFFFF',
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    height: 48,
     fontSize: 16,
     color: '#111827',
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  selectContainer: {
+  optionCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  optionCardActive: {
+    borderColor: 'transparent',
+  },
+  optionGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  optionIcon: {
+    marginBottom: 8,
+  },
+  optionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  optionTextActive: {
+    color: '#fff',
+  },
+  priorityOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  selectOption: {
+  priorityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    marginBottom: 8,
+    paddingVertical: 10,
+    gap: 6,
   },
-  selectOptionActive: {
-    backgroundColor: '#3B82F6',
-  },
-  selectOptionText: {
+  priorityText: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#6B7280',
   },
-  selectOptionTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+  priorityTextActive: {
+    color: '#fff',
+  },
+  textArea: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#111827',
+    minHeight: 100,
+  },
+  submitContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   submitButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    marginTop: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  submitGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
   },
 })

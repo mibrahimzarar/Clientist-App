@@ -1,35 +1,199 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { VERTICALS } from '../src/verticals'
 import { supabase } from '../src/lib/supabase'
 import { setSelectedVertical } from '../src/lib/verticalStorage'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
+
+const verticalIcons: Record<string, any> = {
+  travel_agent: 'airplane',
+  freelancer: 'briefcase',
+  service_provider: 'construct',
+}
+
+const verticalColors: Record<string, [string, string]> = {
+  travel_agent: ['#4F46E5', '#7C3AED'],
+  freelancer: ['#10B981', '#059669'],
+  service_provider: ['#F59E0B', '#D97706'],
+}
 
 export default function SelectVertical() {
+  const insets = useSafeAreaInsets()
   const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [selecting, setSelecting] = useState(false)
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
       setUserId(data.user?.id || null)
+      setLoading(false)
     }
     load()
   }, [])
 
-  const onSelect = async (id: string, route: string) => {
-    if (!userId) return
-    await setSelectedVertical(userId, id)
-    router.replace(route)
+  const onSelect = async (id: string) => {
+    if (!userId || selecting) return
+
+    try {
+      setSelecting(true)
+      await setSelectedVertical(userId, id)
+      // Navigate to root - the main index will show the appropriate dashboard
+      router.replace('/')
+    } catch (error) {
+      console.error('Error selecting vertical:', error)
+      setSelecting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    )
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 22, fontWeight: '600', marginBottom: 8 }}>Choose your field</Text>
-      <Text style={{ fontSize: 14, marginBottom: 24 }}>Select a vertical to continue</Text>
-      {VERTICALS.map(v => (
-        <Pressable key={v.id} onPress={() => onSelect(v.id, v.route)} style={{ padding: 16, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 12 }}>
-          <Text style={{ fontSize: 16 }}>{v.name}</Text>
-        </Pressable>
-      ))}
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Choose Your Vertical</Text>
+          <Text style={styles.subtitle}>Select the business vertical that best describes your work</Text>
+        </View>
+
+        {/* Vertical Cards */}
+        <View style={styles.cardsContainer}>
+          {VERTICALS.map((vertical, index) => (
+            <TouchableOpacity
+              key={vertical.id}
+              onPress={() => onSelect(vertical.id)}
+              disabled={selecting}
+              activeOpacity={0.7}
+            >
+              <LinearGradient
+                colors={verticalColors[vertical.id] || ['#6B7280', '#4B5563']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  styles.verticalCard,
+                  selecting && styles.verticalCardDisabled
+                ]}
+              >
+                <View style={styles.iconContainer}>
+                  <Ionicons
+                    name={verticalIcons[vertical.id] || 'business'}
+                    size={40}
+                    color="#fff"
+                  />
+                </View>
+                <Text style={styles.verticalName}>{vertical.name}</Text>
+                <View style={styles.arrowContainer}>
+                  <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.8)" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {selecting && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={styles.loadingText}>Loading your dashboard...</Text>
+          </View>
+        )}
+
+      </ScrollView>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    padding: 24,
+    paddingTop: 60,
+  },
+  header: {
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    lineHeight: 24,
+  },
+  cardsContainer: {
+    gap: 16,
+  },
+  verticalCard: {
+    borderRadius: 20,
+    padding: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  verticalCardDisabled: {
+    opacity: 0.6,
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  verticalName: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  arrowContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(249,250,251,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+})

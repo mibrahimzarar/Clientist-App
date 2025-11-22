@@ -11,6 +11,8 @@ import {
 } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useClients } from '../../../../src/hooks/useTravelAgent'
 import {
   TravelClient,
@@ -21,6 +23,7 @@ import {
 } from '../../../../src/types/travelAgent'
 
 export default function TravelAgentClientsList() {
+  const insets = useSafeAreaInsets()
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClientStatus | undefined>()
@@ -40,16 +43,16 @@ export default function TravelAgentClientsList() {
   const clients = data?.data?.data || []
   const totalPages = data?.data?.total_pages || 1
 
-  const getStatusColor = (status: ClientStatus) => {
+  const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
-      case 'new': return '#3B82F6'
-      case 'in_process': return '#F59E0B'
-      case 'documents_pending': return '#EF4444'
-      case 'submitted': return '#8B5CF6'
-      case 'approved': return '#10B981'
-      case 'rejected': return '#DC2626'
-      case 'completed': return '#059669'
-      default: return '#6B7280'
+      case 'new': return ['#3B82F6', '#2563EB']
+      case 'in_process': return ['#F59E0B', '#D97706']
+      case 'documents_pending': return ['#EF4444', '#DC2626']
+      case 'submitted': return ['#8B5CF6', '#7C3AED']
+      case 'approved': return ['#10B981', '#059669']
+      case 'rejected': return ['#DC2626', '#B91C1C']
+      case 'completed': return ['#059669', '#047857']
+      default: return ['#6B7280', '#4B5563']
     }
   }
 
@@ -65,68 +68,89 @@ export default function TravelAgentClientsList() {
   const getPackageIcon = (packageType: PackageType) => {
     switch (packageType) {
       case 'umrah_package': return 'airplane'
-      case 'tourist_visa': return 'document'
+      case 'tourist_visa': return 'document-text'
       case 'ticketing': return 'ticket'
       case 'visit_visa': return 'briefcase'
-      default: return 'person'
+      default: return 'cube'
     }
   }
 
   const renderClientItem = ({ item }: { item: TravelClient }) => (
     <TouchableOpacity
-      style={styles.clientItem}
+      style={styles.clientCard}
       onPress={() => router.push(`/(verticals)/travel-agent/clients/${item.id}`)}
+      activeOpacity={0.7}
     >
-      <View style={styles.clientHeader}>
-        <View style={styles.clientInfo}>
-          <Text style={styles.clientName}>{item.full_name}</Text>
-          <Text style={styles.clientPhone}>{item.phone_number}</Text>
-          {item.email && (
-            <Text style={styles.clientEmail}>{item.email}</Text>
-          )}
-        </View>
-        <View style={styles.clientBadges}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.badgeText}>{item.status.replace('_', ' ')}</Text>
-          </View>
-          {item.priority_tag !== 'normal' && (
-            <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority_tag) }]}>
-              <Text style={styles.badgeText}>{item.priority_tag}</Text>
+      <LinearGradient
+        colors={getStatusColor(item.status)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.statusBar}
+      />
+
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <View style={styles.clientInfo}>
+            <Text style={styles.clientName}>{item.full_name}</Text>
+            <View style={styles.contactRow}>
+              <Ionicons name="call" size={14} color="#6B7280" />
+              <Text style={styles.contactText}>{item.phone_number}</Text>
             </View>
-          )}
-        </View>
-      </View>
+            {item.email && (
+              <View style={styles.contactRow}>
+                <Ionicons name="mail" size={14} color="#6B7280" />
+                <Text style={styles.contactText}>{item.email}</Text>
+              </View>
+            )}
+          </View>
 
-      <View style={styles.clientDetails}>
-        <View style={styles.detailRow}>
-          <Ionicons name="location" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.country}</Text>
+          <View style={styles.badges}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status)[0] }]}>
+              <Text style={styles.badgeText}>{item.status.replace('_', ' ')}</Text>
+            </View>
+            {item.priority_tag !== 'normal' && (
+              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(item.priority_tag) }]}>
+                <Ionicons name="flag" size={10} color="#fff" />
+                <Text style={styles.badgeText}>{item.priority_tag}</Text>
+              </View>
+            )}
+          </View>
         </View>
-        <View style={styles.detailRow}>
-          <Ionicons name={getPackageIcon(item.package_type)} size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.package_type.replace('_', ' ')}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="flag" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.lead_source.replace('_', ' ')}</Text>
-        </View>
-      </View>
 
-      {item.notes && (
-        <Text style={styles.clientNotes} numberOfLines={2}>{item.notes}</Text>
-      )}
+        <View style={styles.cardDetails}>
+          <View style={styles.detailChip}>
+            <Ionicons name="location" size={16} color="#4F46E5" />
+            <Text style={styles.detailText}>{item.country}</Text>
+          </View>
+          <View style={styles.detailChip}>
+            <Ionicons name={getPackageIcon(item.package_type)} size={16} color="#4F46E5" />
+            <Text style={styles.detailText}>{item.package_type.replace('_', ' ')}</Text>
+          </View>
+        </View>
 
-      <View style={styles.clientFooter}>
-        <Text style={styles.clientDate}>
-          Created: {new Date(item.created_at).toLocaleDateString()}
-        </Text>
+        {item.notes && (
+          <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text>
+        )}
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.dateText}>
+            {new Date(item.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </Text>
+          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+        </View>
       </View>
     </TouchableOpacity>
   )
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="people-outline" size={64} color="#D1D5DB" />
+      <View style={styles.emptyIconContainer}>
+        <Ionicons name="people-outline" size={64} color="#D1D5DB" />
+      </View>
       <Text style={styles.emptyTitle}>No clients found</Text>
       <Text style={styles.emptyText}>
         {searchTerm || statusFilter || packageFilter || priorityFilter
@@ -134,145 +158,117 @@ export default function TravelAgentClientsList() {
           : 'Start by adding your first client'}
       </Text>
       <TouchableOpacity
-        style={styles.addButton}
+        style={styles.emptyButton}
         onPress={() => router.push('/(verticals)/travel-agent/clients/new')}
       >
-        <Ionicons name="add" size={20} color="#FFFFFF" />
-        <Text style={styles.addButtonText}>Add Client</Text>
+        <LinearGradient
+          colors={['#4F46E5', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.emptyButtonGradient}
+        >
+          <Ionicons name="add-circle" size={20} color="#fff" />
+          <Text style={styles.emptyButtonText}>Add Your First Client</Text>
+        </LinearGradient>
       </TouchableOpacity>
-    </View>
-  )
-
-  const renderFilters = () => (
-    <View style={styles.filtersContainer}>
-      <View style={styles.filterRow}>
-        <Text style={styles.filterLabel}>Status:</Text>
-        <View style={styles.filterOptions}>
-          {(['all', 'new', 'in_process', 'documents_pending', 'submitted', 'approved', 'rejected', 'completed'] as const).map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterButton,
-                (status === 'all' ? !statusFilter : statusFilter === status) && styles.filterButtonActive
-              ]}
-              onPress={() => setStatusFilter(status === 'all' ? undefined : status as ClientStatus)}
-            >
-              <Text style={[
-                styles.filterButtonText,
-                (status === 'all' ? !statusFilter : statusFilter === status) && styles.filterButtonTextActive
-              ]}>
-                {status === 'all' ? 'All' : status.replace('_', ' ')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.filterRow}>
-        <Text style={styles.filterLabel}>Package:</Text>
-        <View style={styles.filterOptions}>
-          {(['all', 'umrah_package', 'tourist_visa', 'ticketing', 'visit_visa'] as const).map((pkg) => (
-            <TouchableOpacity
-              key={pkg}
-              style={[
-                styles.filterButton,
-                (pkg === 'all' ? !packageFilter : packageFilter === pkg) && styles.filterButtonActive
-              ]}
-              onPress={() => setPackageFilter(pkg === 'all' ? undefined : pkg as PackageType)}
-            >
-              <Text style={[
-                styles.filterButtonText,
-                (pkg === 'all' ? !packageFilter : packageFilter === pkg) && styles.filterButtonTextActive
-              ]}>
-                {pkg === 'all' ? 'All' : pkg.replace('_', ' ')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.filterRow}>
-        <Text style={styles.filterLabel}>Priority:</Text>
-        <View style={styles.filterOptions}>
-          {(['all', 'normal', 'priority', 'urgent', 'vip'] as const).map((priority) => (
-            <TouchableOpacity
-              key={priority}
-              style={[
-                styles.filterButton,
-                (priority === 'all' ? !priorityFilter : priorityFilter === priority) && styles.filterButtonActive
-              ]}
-              onPress={() => setPriorityFilter(priority === 'all' ? undefined : priority as PriorityTag)}
-            >
-              <Text style={[
-                styles.filterButtonText,
-                (priority === 'all' ? !priorityFilter : priorityFilter === priority) && styles.filterButtonTextActive
-              ]}>
-                {priority === 'all' ? 'All' : priority}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
     </View>
   )
 
   if (isError) {
     return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={48} color="#EF4444" />
-        <Text style={styles.errorTitle}>Error loading clients</Text>
-        <Text style={styles.errorText}>{error?.message || 'Something went wrong'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={64} color="#EF4444" />
+          <Text style={styles.errorTitle}>Error loading clients</Text>
+          <Text style={styles.errorText}>{error?.message || 'Something went wrong'}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     )
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Travel Agent Clients</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/(verticals)/travel-agent/clients/new')}
-        >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search clients by name, phone, email, or country..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
+      {/* Header with Gradient */}
+      <LinearGradient
+        colors={['#4F46E5', '#7C3AED']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Clients</Text>
+            <Text style={styles.headerSubtitle}>
+              {data?.data?.total || 0} total clients
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push('/(verticals)/travel-agent/clients/new')}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[styles.filterToggle, showFilters && styles.filterToggleActive]}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <Ionicons name="filter" size={20} color={showFilters ? '#FFFFFF' : '#6B7280'} />
-        </TouchableOpacity>
-      </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color="#6B7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search clients..."
+              placeholderTextColor="#9CA3AF"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+            {searchTerm.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchTerm('')}>
+                <Ionicons name="close-circle" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={[styles.filterButton, showFilters && styles.filterButtonActive]}
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Ionicons name="options" size={20} color={showFilters ? '#4F46E5' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Filters */}
-      {showFilters && renderFilters()}
-
-      {/* Results Count */}
-      <View style={styles.resultsContainer}>
-        <Text style={styles.resultsText}>
-          {data?.data?.total || 0} client{data?.data?.total !== 1 ? 's' : ''} found
-        </Text>
-      </View>
+      {showFilters && (
+        <View style={styles.filtersContainer}>
+          <Text style={styles.filterLabel}>Status</Text>
+          <View style={styles.filterChips}>
+            <TouchableOpacity
+              style={[styles.filterChip, !statusFilter && styles.filterChipActive]}
+              onPress={() => setStatusFilter(undefined)}
+            >
+              <Text style={[styles.filterChipText, !statusFilter && styles.filterChipTextActive]}>
+                All
+              </Text>
+            </TouchableOpacity>
+            {(['new', 'in_process', 'completed'] as ClientStatus[]).map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}
+                onPress={() => setStatusFilter(status)}
+              >
+                <Text style={[styles.filterChipText, statusFilter === status && styles.filterChipTextActive]}>
+                  {status.replace('_', ' ')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
 
       {/* Clients List */}
       <FlatList
@@ -290,9 +286,9 @@ export default function TravelAgentClientsList() {
           }
         }}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={() => 
+        ListFooterComponent={() =>
           isLoading && clients.length > 0 ? (
-            <ActivityIndicator style={styles.loadMoreIndicator} />
+            <ActivityIndicator style={styles.loadMoreIndicator} color="#4F46E5" />
           ) : null
         }
       />
@@ -306,51 +302,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingTop: 16,
+    marginBottom: 16,
   },
   backButton: {
     padding: 8,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+  headerContent: {
     flex: 1,
-    textAlign: 'center',
+    marginLeft: 12,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 2,
   },
   addButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
     padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 24,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    gap: 12,
   },
-  searchInputContainer: {
+  searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#fff',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginRight: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
@@ -358,79 +358,73 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
-  filterToggle: {
-    backgroundColor: '#F3F4F6',
+  filterButton: {
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  filterToggleActive: {
-    backgroundColor: '#3B82F6',
+  filterButtonActive: {
+    backgroundColor: '#EEF2FF',
   },
   filtersContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    paddingTop: 0,
-  },
-  filterRow: {
-    marginBottom: 16,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  filterOptions: {
+  filterChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  filterButton: {
+  filterChip: {
     backgroundColor: '#F3F4F6',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  filterButtonActive: {
-    backgroundColor: '#3B82F6',
+  filterChipActive: {
+    backgroundColor: '#4F46E5',
   },
-  filterButtonText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  resultsContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  resultsText: {
+  filterChipText: {
     fontSize: 14,
+    fontWeight: '500',
     color: '#6B7280',
+  },
+  filterChipTextActive: {
+    color: '#fff',
   },
   listContent: {
-    padding: 24,
-    paddingTop: 12,
+    padding: 20,
   },
-  clientItem: {
-    backgroundColor: '#FFFFFF',
+  clientCard: {
+    backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: 8,
     elevation: 2,
   },
-  clientHeader: {
+  statusBar: {
+    height: 4,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: 12,
   },
   clientInfo: {
@@ -440,62 +434,76 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
+    marginBottom: 6,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 4,
   },
-  clientPhone: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 2,
-  },
-  clientEmail: {
+  contactText: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 2,
   },
-  clientBadges: {
+  badges: {
     alignItems: 'flex-end',
+    gap: 6,
   },
   statusBadge: {
     borderRadius: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    marginBottom: 4,
   },
   priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    gap: 4,
   },
   badgeText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
-  clientDetails: {
+  cardDetails: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 12,
   },
-  detailRow: {
+  detailChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
   },
   detailText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 8,
+    fontSize: 13,
+    color: '#4F46E5',
+    fontWeight: '500',
+    textTransform: 'capitalize',
   },
-  clientNotes: {
+  notes: {
     fontSize: 14,
     color: '#6B7280',
     fontStyle: 'italic',
     marginBottom: 12,
   },
-  clientFooter: {
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    paddingTop: 12,
   },
-  clientDate: {
+  dateText: {
     fontSize: 12,
     color: '#9CA3AF',
   },
@@ -503,62 +511,79 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 48,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
     color: '#111827',
-    marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
+    lineHeight: 24,
   },
-  addClientButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  emptyButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  emptyButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    gap: 8,
   },
-  addButtonText: {
-    color: '#FFFFFF',
+  emptyButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 48,
+    padding: 40,
   },
   errorTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
     color: '#111827',
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#4F46E5',
     borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
