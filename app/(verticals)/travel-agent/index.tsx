@@ -33,13 +33,6 @@ export default function TravelAgent() {
       color: '#8B5CF6'
     },
     {
-      title: 'Visa Applications',
-      description: 'Track visa status',
-      icon: 'document' as const,
-      href: '/(verticals)/travel-agent/visas',
-      color: '#F59E0B'
-    },
-    {
       title: 'Calendar',
       description: 'Upcoming travels and tasks',
       icon: 'calendar' as const,

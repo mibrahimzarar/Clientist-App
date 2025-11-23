@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, Pressable, Image, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, Image, StyleSheet } from 'react-native'
+import { BouncingBallsLoader } from '../src/components/ui/BouncingBallsLoader'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../src/lib/supabase'
 import { router, Link } from 'expo-router'
@@ -40,8 +41,8 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#222" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <BouncingBallsLoader size={12} color="#222" />
       </View>
     )
   }

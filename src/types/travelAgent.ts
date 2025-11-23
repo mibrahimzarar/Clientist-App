@@ -26,7 +26,7 @@ export type TravelClient = {
   updated_at: string
   created_by?: string
   updated_by?: string
-  
+
   // Related data (optional for joins)
   travel_information?: TravelInformation
   visa_applications?: VisaApplication[]
@@ -277,4 +277,15 @@ export type NotificationData = {
   client_id?: string
   reminder_id?: string
   due_date?: string
+}
+
+// Client Note type
+export type ClientNote = {
+  id: string
+  client_id: string
+  content: string
+  type: 'note' | 'status_change' | 'creation' | 'follow_up' | 'system'
+  is_pinned: boolean
+  created_at: string
+  created_by?: string
 }

@@ -7,10 +7,10 @@ import {
     StyleSheet,
     ScrollView,
     Alert,
-    ActivityIndicator,
     Modal,
     Platform,
 } from 'react-native'
+import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -349,7 +349,7 @@ export default function NewTrip() {
                         style={styles.submitGradient}
                     >
                         {createTrip.isPending ? (
-                            <ActivityIndicator color="#fff" />
+                            <BouncingBallsLoader color="#fff" size={8} />
                         ) : (
                             <>
                                 <Ionicons name="checkmark-circle" size={24} color="#fff" />

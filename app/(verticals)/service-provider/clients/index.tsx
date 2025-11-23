@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native'
+import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useClients } from '../../../../src/hooks/useTravelAgent'
@@ -39,6 +39,14 @@ export default function ServiceProviderClientsList() {
 
   const clients = data?.data?.data || []
   const totalPages = data?.data?.total_pages || 1
+
+  if (isLoading && !clients.length) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <BouncingBallsLoader size={12} color="#4F46E5" />
+      </View>
+    )
+  }
 
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
@@ -290,9 +298,11 @@ export default function ServiceProviderClientsList() {
           }
         }}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={() => 
+        ListFooterComponent={() =>
           isLoading && clients.length > 0 ? (
-            <ActivityIndicator style={styles.loadMoreIndicator} />
+            <View style={styles.loadMoreIndicator}>
+              <BouncingBallsLoader size={12} color="#4F46E5" />
+            </View>
           ) : null
         }
       />

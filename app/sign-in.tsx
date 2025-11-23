@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, Pressable, ActivityIndicator, Image, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, Pressable, Image, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native'
+import { BouncingBallsLoader } from '../src/components/ui/BouncingBallsLoader'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../src/lib/supabase'
 import { router, Link } from 'expo-router'
@@ -75,7 +76,7 @@ export default function SignIn() {
             </View>
 
             <Pressable onPress={onSignIn} style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign In</Text>}
+              {loading ? <BouncingBallsLoader color="#fff" size={8} /> : <Text style={styles.buttonText}>Sign In</Text>}
             </Pressable>
 
             <View style={styles.footer}>

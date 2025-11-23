@@ -7,13 +7,16 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  ActivityIndicator,
+  Image,
 } from 'react-native'
+import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as ImagePicker from 'expo-image-picker'
 import { useCreateClient } from '../../../../src/hooks/useTravelAgent'
+import { uploadClientProfileImage } from '../../../../src/api/travelAgent'
 import { PackageType, LeadSource, ClientStatus, PriorityTag } from '../../../../src/types/travelAgent'
 
 const packageOptions = [
@@ -50,8 +53,47 @@ export default function NewClient() {
     priority_tag: 'normal' as PriorityTag,
     notes: '',
   })
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const createClient = useCreateClient()
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera roll permissions to upload a profile picture.')
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      setProfileImage(result.assets[0].uri)
+    }
+  }
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera permissions to take a photo.')
+      return
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      setProfileImage(result.assets[0].uri)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!formData.full_name.trim() || !formData.phone_number.trim() || !formData.country.trim()) {
@@ -60,12 +102,33 @@ export default function NewClient() {
     }
 
     try {
-      await createClient.mutateAsync(formData)
+      const result = await createClient.mutateAsync(formData)
+
+      // Upload profile image if selected
+      if (profileImage && result.data?.id) {
+        setUploadingImage(true)
+        const fileName = profileImage.split('/').pop() || 'profile.jpg'
+        const uploadResult = await uploadClientProfileImage(result.data.id, profileImage, fileName)
+
+        if (!uploadResult.success) {
+          console.error('Image upload failed:', uploadResult.error)
+          Alert.alert(
+            'Partial Success',
+            `Client created but image upload failed: ${uploadResult.error}. You can add the image later by editing the client.`,
+            [{ text: 'OK', onPress: () => router.back() }]
+          )
+          return
+        }
+      }
+
       Alert.alert('Success', 'Client created successfully', [
         { text: 'OK', onPress: () => router.back() }
       ])
     } catch (error) {
+      console.error('Create client error:', error)
       Alert.alert('Error', 'Failed to create client. Please try again.')
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -179,6 +242,59 @@ export default function NewClient() {
                 placeholder="Enter country"
                 placeholderTextColor="#9CA3AF"
               />
+            </View>
+          </View>
+        </View>
+
+        {/* Profile Image Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="image" size={24} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Profile Picture</Text>
+          </View>
+
+          <View style={styles.imageSection}>
+            {profileImage ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: profileImage }} style={styles.imagePreview} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setProfileImage(null)}
+                >
+                  <Ionicons name="close-circle" size={24} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="person-circle-outline" size={80} color="#D1D5DB" />
+                <Text style={styles.imagePlaceholderText}>No image selected</Text>
+              </View>
+            )}
+
+            <View style={styles.imageButtons}>
+              <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                <LinearGradient
+                  colors={['#4F46E5', '#7C3AED']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.imageButtonGradient}
+                >
+                  <Ionicons name="images" size={20} color="#fff" />
+                  <Text style={styles.imageButtonText}>Gallery</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.imageButtonGradient}
+                >
+                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Text style={styles.imageButtonText}>Camera</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -336,7 +452,7 @@ export default function NewClient() {
             style={styles.submitGradient}
           >
             {createClient.isPending ? (
-              <ActivityIndicator color="#fff" />
+              <BouncingBallsLoader color="#fff" size={8} />
             ) : (
               <>
                 <Ionicons name="checkmark-circle" size={24} color="#fff" />
@@ -566,6 +682,69 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  imageSection: {
+    alignItems: 'center',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  imagePreview: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#F3F4F6',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    paddingVertical: 20,
+  },
+  imagePlaceholderText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+  imageButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  imageButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imageButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  imageButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
 })

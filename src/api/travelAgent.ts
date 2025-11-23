@@ -78,9 +78,10 @@ export async function getClients(
 // Get single client with all related data
 export async function getClientById(id: string): Promise<ApiResponse<TravelClient>> {
   try {
-    // Use the database function to get all related data
     const { data, error } = await supabase
-      .rpc('get_client_full_details', { client_uuid: id })
+      .from('clients')
+      .select('*')
+      .eq('id', id)
       .single()
 
     if (error) throw error
@@ -205,7 +206,7 @@ export async function getTravelInformation(clientId: string): Promise<ApiRespons
 }
 
 export async function createOrUpdateTravelInformation(
-  clientId: string, 
+  clientId: string,
   travelData: TravelFormData
 ): Promise<ApiResponse<TravelInformation>> {
   try {
@@ -259,7 +260,7 @@ export async function getVisaApplications(clientId: string): Promise<ApiResponse
 }
 
 export async function createVisaApplication(
-  clientId: string, 
+  clientId: string,
   visaData: VisaFormData
 ): Promise<ApiResponse<VisaApplication>> {
   try {
@@ -287,7 +288,7 @@ export async function createVisaApplication(
 }
 
 export async function updateVisaApplication(
-  id: string, 
+  id: string,
   visaData: Partial<VisaFormData>
 ): Promise<ApiResponse<VisaApplication>> {
   try {
@@ -342,7 +343,7 @@ export async function getReminders(clientId?: string): Promise<ApiResponse<Trave
 }
 
 export async function createReminder(
-  clientId: string, 
+  clientId: string,
   reminderData: ReminderFormData
 ): Promise<ApiResponse<TravelReminder>> {
   try {
@@ -374,7 +375,7 @@ export async function updateReminderStatus(id: string, isCompleted: boolean): Pr
   try {
     const { data, error } = await supabase
       .from('reminders')
-      .update({ 
+      .update({
         is_completed: isCompleted,
         completed_at: isCompleted ? new Date().toISOString() : null
       })
@@ -421,7 +422,7 @@ export async function getPayments(clientId: string): Promise<ApiResponse<Payment
 }
 
 export async function createPayment(
-  clientId: string, 
+  clientId: string,
   paymentData: PaymentFormData
 ): Promise<ApiResponse<Payment>> {
   try {
@@ -514,6 +515,89 @@ function getBucketNameForFileType(fileType: string): string {
       return 'client-profiles'
     default:
       return 'client-documents'
+  }
+}
+
+// Upload client profile image
+export async function uploadClientProfileImage(
+  clientId: string,
+  imageUri: string,
+  fileName: string
+): Promise<ApiResponse<string>> {
+  try {
+    console.log('Starting image upload for client:', clientId)
+    console.log('Image URI:', imageUri)
+
+    const fileExt = fileName.split('.').pop()?.toLowerCase() || 'jpg'
+    const filePath = `${clientId}/profile_${Date.now()}.${fileExt}`
+    console.log('Upload path:', filePath)
+
+    // Map file extensions to proper MIME types
+    const mimeTypes: { [key: string]: string } = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'heic': 'image/heic',
+      'heif': 'image/heif',
+    }
+
+    const mimeType = mimeTypes[fileExt] || 'image/jpeg'
+    console.log('MIME type:', mimeType)
+
+    // Read the file as ArrayBuffer for React Native
+    const response = await fetch(imageUri)
+    const arrayBuffer = await response.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    console.log('File read, size:', uint8Array.length, 'bytes')
+
+    // Upload to Supabase Storage using ArrayBuffer
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('client-profiles')
+      .upload(filePath, uint8Array, {
+        contentType: mimeType,
+        upsert: true
+      })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw uploadError
+    }
+
+    console.log('Upload successful:', uploadData)
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('client-profiles')
+      .getPublicUrl(filePath)
+
+    console.log('Public URL:', publicUrl)
+
+    // Update client record with profile picture URL
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update({ profile_picture_url: publicUrl })
+      .eq('id', clientId)
+
+    if (updateError) {
+      console.error('Database update error:', updateError)
+      throw updateError
+    }
+
+    console.log('Client record updated successfully')
+
+    return {
+      data: publicUrl,
+      success: true
+    }
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    return {
+      error: error instanceof Error ? error.message : 'Failed to upload profile image',
+      success: false
+    }
   }
 }
 

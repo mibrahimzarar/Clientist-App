@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { BouncingBallsLoader } from '../src/components/ui/BouncingBallsLoader'
 import { VERTICALS } from '../src/verticals'
 import { supabase } from '../src/lib/supabase'
 import { setSelectedVertical } from '../src/lib/verticalStorage'
@@ -52,7 +53,7 @@ export default function SelectVertical() {
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <BouncingBallsLoader size={12} color="#4F46E5" />
       </View>
     )
   }
@@ -103,7 +104,7 @@ export default function SelectVertical() {
 
         {selecting && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#4F46E5" />
+            <BouncingBallsLoader size={12} color="#4F46E5" />
             <Text style={styles.loadingText}>Loading your dashboard...</Text>
           </View>
         )}

@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native'
-import { router } from 'expo-router'
+import { BouncingBallsLoader } from '../../../src/components/ui/BouncingBallsLoader'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '../../../src/lib/supabase'
@@ -17,6 +17,7 @@ import { useTrips } from '../../../src/hooks/useTrips'
 import { Trip } from '../../../src/types/trips'
 
 export default function TripsPage() {
+  const { clientId } = useLocalSearchParams<{ clientId?: string }>()
   const [userId, setUserId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -28,8 +29,19 @@ export default function TripsPage() {
     fetchUser()
   }, [])
 
-  const { data, isLoading, isError, error, refetch } = useTrips(userId || '', { search_term: searchTerm })
+  const { data, isLoading, isError, error, refetch } = useTrips(userId || '', {
+    search_term: searchTerm,
+    client_id: clientId
+  })
   const trips = data?.data || []
+
+  if (isLoading && !trips.length) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <BouncingBallsLoader size={12} color="#047857" />
+      </View>
+    )
+  }
 
   const renderTripItem = ({ item }: { item: Trip }) => {
     const departureDate = new Date(item.departure_date)

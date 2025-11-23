@@ -140,11 +140,11 @@ export default function TravelAgentDashboard() {
                         <Text style={styles.actionText}>Trips</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/visas')}>
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/notes')}>
                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.actionIcon}>
                             <Ionicons name="document-text" size={24} color="#fff" />
                         </LinearGradient>
-                        <Text style={styles.actionText}>Visas</Text>
+                        <Text style={styles.actionText}>Notes</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={signOut}>
@@ -181,9 +181,16 @@ export default function TravelAgentDashboard() {
                                 style={styles.clientGradient}
                             >
                                 <View style={styles.clientAvatar}>
-                                    <Text style={styles.clientInitials}>
-                                        {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                                    </Text>
+                                    {client.profile_picture_url ? (
+                                        <Image
+                                            source={{ uri: client.profile_picture_url }}
+                                            style={styles.clientAvatarImage}
+                                        />
+                                    ) : (
+                                        <Text style={styles.clientInitials}>
+                                            {client.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'NA'}
+                                        </Text>
+                                    )}
                                 </View>
                                 <Text style={styles.clientName} numberOfLines={1}>{client.full_name}</Text>
                                 <View style={styles.clientInfo}>
@@ -494,6 +501,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: '#fff',
+    },
+    clientAvatarImage: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
     },
     clientName: {
         fontSize: 14,

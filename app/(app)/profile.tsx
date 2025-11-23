@@ -8,8 +8,8 @@ import {
   TextInput,
   Image,
   Alert,
-  ActivityIndicator,
 } from 'react-native'
+import { BouncingBallsLoader } from '../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
@@ -205,7 +205,7 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <BouncingBallsLoader size={12} color="#4F46E5" />
       </View>
     )
   }
@@ -234,7 +234,7 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
             )}
             {saving && (
               <View style={styles.uploadingOverlay}>
-                <ActivityIndicator color="#fff" />
+                <BouncingBallsLoader color="#fff" size={8} />
               </View>
             )}
             <View style={styles.editIcon}>

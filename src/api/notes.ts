@@ -1,30 +1,72 @@
 import { supabase } from '../lib/supabase'
-import { Note } from '../types'
-import { load, save } from '../lib/storage'
-import { nanoid } from 'nanoid/non-secure'
+import { ClientNote } from '../types/travelAgent'
 
-const KEY = 'clientist_notes'
+export async function getClientNotes(clientId: string) {
+  const { data, error } = await supabase
+    .from('client_notes')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('is_pinned', { ascending: false })
+    .order('created_at', { ascending: false })
 
-export async function listNotes(clientId: string): Promise<Note[]> {
-  try {
-    const { data, error } = await supabase.from('notes').select('*').eq('client_id', clientId).order('created_at', { ascending: false })
-    if (error) throw error
-    return (data || []) as Note[]
-  } catch {
-    const all = await load<Note[]>(KEY, [])
-    return all.filter(n => n.client_id === clientId)
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data as ClientNote[]
+}
+
+export async function createClientNote(
+  clientId: string,
+  content: string,
+  type: ClientNote['type'] = 'note',
+  isPinned: boolean = false
+) {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('client_notes')
+    .insert({
+      client_id: clientId,
+      content,
+      type,
+      is_pinned: isPinned,
+      created_by: user.id
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data as ClientNote
+}
+
+export async function deleteClientNote(noteId: string) {
+  const { error } = await supabase
+    .from('client_notes')
+    .delete()
+    .eq('id', noteId)
+
+  if (error) {
+    throw new Error(error.message)
   }
 }
 
-export async function createNote(clientId: string, content: string): Promise<Note> {
-  const note: Note = { id: nanoid(), client_id: clientId, content, created_at: new Date().toISOString() }
-  try {
-    const { error } = await supabase.from('notes').insert(note)
-    if (error) throw error
-  } catch {
-    const all = await load<Note[]>(KEY, [])
-    const next = [note, ...all]
-    await save(KEY, next)
+export async function toggleNotePin(noteId: string, isPinned: boolean) {
+  const { data, error } = await supabase
+    .from('client_notes')
+    .update({ is_pinned: isPinned })
+    .eq('id', noteId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
   }
-  return note
+
+  return data as ClientNote
 }
