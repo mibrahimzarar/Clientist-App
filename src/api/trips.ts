@@ -7,7 +7,7 @@ export async function getTrips(userId: string, filters?: TripFilters) {
       .from('travel_trips')
       .select(`
         *,
-        client:travel_clients(id, full_name, phone_number, email)
+        client:clients(id, full_name, phone_number, email)
       `)
       .eq('created_by', userId)
       .order('departure_date', { ascending: false })
@@ -44,7 +44,7 @@ export async function getTripById(id: string) {
       .from('travel_trips')
       .select(`
         *,
-        client:travel_clients(id, full_name, phone_number, email)
+        client:clients(id, full_name, phone_number, email)
       `)
       .eq('id', id)
       .single()
@@ -67,7 +67,7 @@ export async function createTrip(userId: string, tripData: TripFormData) {
       })
       .select(`
         *,
-        client:travel_clients(id, full_name, phone_number, email)
+        client:clients(id, full_name, phone_number, email)
       `)
       .single()
 
@@ -87,7 +87,7 @@ export async function updateTrip(id: string, tripData: Partial<TripFormData>) {
       .eq('id', id)
       .select(`
         *,
-        client:travel_clients(id, full_name, phone_number, email)
+        client:clients(id, full_name, phone_number, email)
       `)
       .single()
 

@@ -37,6 +37,8 @@ export default function NewTrip() {
     const [showClientPicker, setShowClientPicker] = useState(false)
     const [showDatePicker, setShowDatePicker] = useState<DatePickerType>(null)
     const [tempDate, setTempDate] = useState(new Date())
+    const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('day')
+    const [viewDate, setViewDate] = useState(new Date())
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -93,6 +95,8 @@ export default function NewTrip() {
             ? (formData.departure_date ? new Date(formData.departure_date) : new Date())
             : (formData.destination_date ? new Date(formData.destination_date) : new Date())
         setTempDate(currentDate)
+        setViewDate(currentDate)
+        setViewMode('day')
         setShowDatePicker(type)
     }
 
@@ -371,122 +375,226 @@ export default function NewTrip() {
                             end={{ x: 1, y: 1 }}
                             style={styles.modalHeader}
                         >
-                            <Text style={styles.modalTitle}>
-                                {showDatePicker === 'departure' ? 'Departure Date & Time' : 'Arrival Date & Time'}
-                            </Text>
+                            <View>
+                                <Text style={styles.modalTitle}>
+                                    {showDatePicker === 'departure' ? 'Departure Date' : 'Arrival Date'}
+                                </Text>
+                                <View style={styles.headerSelectors}>
+                                    <TouchableOpacity
+                                        onPress={() => setViewMode('month')}
+                                        style={[styles.headerSelector, viewMode === 'month' && styles.headerSelectorActive]}
+                                    >
+                                        <Text style={[styles.headerSelectorText, viewMode === 'month' && styles.headerSelectorTextActive]}>
+                                            {viewDate.toLocaleDateString('en-US', { month: 'long' })}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={16} color={viewMode === 'month' ? '#047857' : 'rgba(255,255,255,0.8)'} />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setViewMode('year')}
+                                        style={[styles.headerSelector, viewMode === 'year' && styles.headerSelectorActive]}
+                                    >
+                                        <Text style={[styles.headerSelectorText, viewMode === 'year' && styles.headerSelectorTextActive]}>
+                                            {viewDate.getFullYear()}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={16} color={viewMode === 'year' ? '#047857' : 'rgba(255,255,255,0.8)'} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                             <TouchableOpacity onPress={() => setShowDatePicker(null)}>
                                 <Ionicons name="close-circle" size={28} color="#fff" />
                             </TouchableOpacity>
                         </LinearGradient>
 
                         <View style={styles.datePickerContainer}>
-                            {/* Date Selection - Horizontal Scroll */}
-                            <View style={styles.dateSection}>
-                                <Text style={styles.sectionLabel}>Select Date</Text>
-                                <ScrollView
-                                    horizontal
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={styles.dateScrollContainer}
-                                    snapToInterval={100}
-                                    decelerationRate="fast"
-                                >
-                                    {Array.from({ length: 60 }, (_, i) => {
-                                        const date = new Date()
-                                        date.setDate(date.getDate() + i - 7)
-                                        const isSelected = date.toDateString() === tempDate.toDateString()
+                            {viewMode === 'day' && (
+                                <>
+                                    {/* Date Selection - Horizontal Scroll */}
+                                    <View style={styles.dateSection}>
+                                        <Text style={styles.sectionLabel}>Select Day</Text>
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            contentContainerStyle={styles.dateScrollContainer}
+                                            snapToInterval={80}
+                                            decelerationRate="fast"
+                                        >
+                                            {Array.from({ length: new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate() }, (_, i) => {
+                                                const day = i + 1
+                                                const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
+                                                const isSelected = date.getDate() === tempDate.getDate() &&
+                                                    date.getMonth() === tempDate.getMonth() &&
+                                                    date.getFullYear() === tempDate.getFullYear()
+
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={i}
+                                                        style={[styles.dateCard, isSelected && styles.dateCardSelected]}
+                                                        onPress={() => {
+                                                            const newDate = new Date(tempDate)
+                                                            newDate.setFullYear(date.getFullYear(), date.getMonth(), day)
+                                                            setTempDate(newDate)
+                                                        }}
+                                                    >
+                                                        <Text style={[styles.dateCardDay, isSelected && styles.dateCardDaySelected]}>
+                                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                        </Text>
+                                                        <Text style={[styles.dateCardDate, isSelected && styles.dateCardDateSelected]}>
+                                                            {day}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )
+                                            })}
+                                        </ScrollView>
+                                    </View>
+
+                                    {/* Time Selection - Vertical Scrolls */}
+                                    <View style={styles.timeSection}>
+                                        <Text style={styles.sectionLabel}>Select Time</Text>
+                                        <View style={styles.timeGrid}>
+                                            {/* Hours */}
+                                            <View style={styles.timeColumn}>
+                                                <Text style={styles.timeLabel}>Hour</Text>
+                                                <ScrollView
+                                                    style={styles.timeScroll}
+                                                    showsVerticalScrollIndicator={false}
+                                                    snapToInterval={50}
+                                                    decelerationRate="fast"
+                                                >
+                                                    {Array.from({ length: 24 }, (_, i) => {
+                                                        const isSelected = i === tempDate.getHours()
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={i}
+                                                                style={[styles.timeItem, isSelected && styles.timeItemSelected]}
+                                                                onPress={() => {
+                                                                    const newDate = new Date(tempDate)
+                                                                    newDate.setHours(i)
+                                                                    setTempDate(newDate)
+                                                                }}
+                                                            >
+                                                                <Text style={[styles.timeItemText, isSelected && styles.timeItemTextSelected]}>
+                                                                    {String(i).padStart(2, '0')}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        )
+                                                    })}
+                                                </ScrollView>
+                                            </View>
+
+                                            <Text style={styles.timeSeparator}>:</Text>
+
+                                            {/* Minutes */}
+                                            <View style={styles.timeColumn}>
+                                                <Text style={styles.timeLabel}>Minute</Text>
+                                                <ScrollView
+                                                    style={styles.timeScroll}
+                                                    showsVerticalScrollIndicator={false}
+                                                    snapToInterval={50}
+                                                    decelerationRate="fast"
+                                                >
+                                                    {Array.from({ length: 12 }, (_, i) => {
+                                                        const minute = i * 5
+                                                        const isSelected = Math.floor(tempDate.getMinutes() / 5) * 5 === minute
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={i}
+                                                                style={[styles.timeItem, isSelected && styles.timeItemSelected]}
+                                                                onPress={() => {
+                                                                    const newDate = new Date(tempDate)
+                                                                    newDate.setMinutes(minute)
+                                                                    setTempDate(newDate)
+                                                                }}
+                                                            >
+                                                                <Text style={[styles.timeItemText, isSelected && styles.timeItemTextSelected]}>
+                                                                    {String(minute).padStart(2, '0')}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        )
+                                                    })}
+                                                </ScrollView>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </>
+                            )}
+
+                            {viewMode === 'month' && (
+                                <View style={styles.monthGrid}>
+                                    {Array.from({ length: 12 }, (_, i) => {
+                                        const isSelected = i === viewDate.getMonth()
                                         return (
                                             <TouchableOpacity
                                                 key={i}
-                                                style={[styles.dateCard, isSelected && styles.dateCardSelected]}
+                                                style={[styles.monthCard, isSelected && styles.monthCardSelected]}
                                                 onPress={() => {
-                                                    const newDate = new Date(tempDate)
-                                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate())
-                                                    setTempDate(newDate)
+                                                    // Fix: Set date to 1 to avoid month overflow (e.g. Jan 31 -> Feb -> Mar)
+                                                    const newViewDate = new Date(viewDate)
+                                                    newViewDate.setDate(1)
+                                                    newViewDate.setMonth(i)
+                                                    setViewDate(newViewDate)
+
+                                                    // Update tempDate, clamping day if necessary
+                                                    const newTempDate = new Date(tempDate)
+                                                    const currentDay = newTempDate.getDate()
+                                                    // Set to 1st of target month/year first
+                                                    newTempDate.setFullYear(viewDate.getFullYear(), i, 1)
+                                                    // Get max days in target month
+                                                    const daysInMonth = new Date(viewDate.getFullYear(), i + 1, 0).getDate()
+                                                    // Restore day, clamped to max days
+                                                    newTempDate.setDate(Math.min(currentDay, daysInMonth))
+                                                    setTempDate(newTempDate)
+
+                                                    setViewMode('day')
                                                 }}
                                             >
-                                                <Text style={[styles.dateCardDay, isSelected && styles.dateCardDaySelected]}>
-                                                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                <Text style={[styles.monthText, isSelected && styles.monthTextSelected]}>
+                                                    {new Date(2024, i, 15).toLocaleDateString('en-US', { month: 'short' })}
                                                 </Text>
-                                                <Text style={[styles.dateCardDate, isSelected && styles.dateCardDateSelected]}>
-                                                    {date.getDate()}
-                                                </Text>
-                                                <Text style={[styles.dateCardMonth, isSelected && styles.dateCardMonthSelected]}>
-                                                    {date.toLocaleDateString('en-US', { month: 'short' })}
+                                            </TouchableOpacity>
+                                        )
+                                    })}
+                                </View>
+                            )}
+
+                            {viewMode === 'year' && (
+                                <ScrollView style={styles.yearList} showsVerticalScrollIndicator={false}>
+                                    {Array.from({ length: 10 }, (_, i) => {
+                                        const year = new Date().getFullYear() - 2 + i
+                                        const isSelected = year === viewDate.getFullYear()
+                                        return (
+                                            <TouchableOpacity
+                                                key={i}
+                                                style={[styles.yearItem, isSelected && styles.yearItemSelected]}
+                                                onPress={() => {
+                                                    // Fix: Handle leap year overflow for viewDate
+                                                    const newViewDate = new Date(viewDate)
+                                                    newViewDate.setDate(1) // Safe day
+                                                    newViewDate.setFullYear(year)
+                                                    setViewDate(newViewDate)
+
+                                                    // Update tempDate, handling leap year (Feb 29 -> Feb 28)
+                                                    const newTempDate = new Date(tempDate)
+                                                    const currentMonth = newTempDate.getMonth()
+                                                    const currentDay = newTempDate.getDate()
+
+                                                    newTempDate.setFullYear(year)
+                                                    // Check if month changed due to overflow (e.g. Feb 29 -> Mar 1)
+                                                    if (newTempDate.getMonth() !== currentMonth) {
+                                                        newTempDate.setDate(0) // Go back to last day of previous month (Feb 28/29)
+                                                    }
+                                                    setTempDate(newTempDate)
+
+                                                    setViewMode('month')
+                                                }}
+                                            >
+                                                <Text style={[styles.yearText, isSelected && styles.yearTextSelected]}>
+                                                    {year}
                                                 </Text>
                                             </TouchableOpacity>
                                         )
                                     })}
                                 </ScrollView>
-                            </View>
-
-                            {/* Time Selection - Vertical Scrolls */}
-                            <View style={styles.timeSection}>
-                                <Text style={styles.sectionLabel}>Select Time</Text>
-                                <View style={styles.timeGrid}>
-                                    {/* Hours */}
-                                    <View style={styles.timeColumn}>
-                                        <Text style={styles.timeLabel}>Hour</Text>
-                                        <ScrollView
-                                            style={styles.timeScroll}
-                                            showsVerticalScrollIndicator={false}
-                                            snapToInterval={50}
-                                            decelerationRate="fast"
-                                        >
-                                            {Array.from({ length: 24 }, (_, i) => {
-                                                const isSelected = i === tempDate.getHours()
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={i}
-                                                        style={[styles.timeItem, isSelected && styles.timeItemSelected]}
-                                                        onPress={() => {
-                                                            const newDate = new Date(tempDate)
-                                                            newDate.setHours(i)
-                                                            setTempDate(newDate)
-                                                        }}
-                                                    >
-                                                        <Text style={[styles.timeItemText, isSelected && styles.timeItemTextSelected]}>
-                                                            {String(i).padStart(2, '0')}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                )
-                                            })}
-                                        </ScrollView>
-                                    </View>
-
-                                    <Text style={styles.timeSeparator}>:</Text>
-
-                                    {/* Minutes */}
-                                    <View style={styles.timeColumn}>
-                                        <Text style={styles.timeLabel}>Minute</Text>
-                                        <ScrollView
-                                            style={styles.timeScroll}
-                                            showsVerticalScrollIndicator={false}
-                                            snapToInterval={50}
-                                            decelerationRate="fast"
-                                        >
-                                            {Array.from({ length: 12 }, (_, i) => {
-                                                const minute = i * 5
-                                                const isSelected = Math.floor(tempDate.getMinutes() / 5) * 5 === minute
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={i}
-                                                        style={[styles.timeItem, isSelected && styles.timeItemSelected]}
-                                                        onPress={() => {
-                                                            const newDate = new Date(tempDate)
-                                                            newDate.setMinutes(minute)
-                                                            setTempDate(newDate)
-                                                        }}
-                                                    >
-                                                        <Text style={[styles.timeItemText, isSelected && styles.timeItemTextSelected]}>
-                                                            {String(minute).padStart(2, '0')}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                )
-                                            })}
-                                        </ScrollView>
-                                    </View>
-                                </View>
-                            </View>
+                            )}
                         </View>
 
                         <View style={styles.modalActions}>
@@ -767,7 +875,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     dateSection: {
-        marginBottom: 24,
+        marginBottom: 110,
     },
     sectionLabel: {
         fontSize: 14,
@@ -798,15 +906,15 @@ const styles = StyleSheet.create({
     },
     dateCardDay: {
         fontSize: 12,
-        fontWeight: '500',
         color: '#6B7280',
         marginBottom: 4,
+        textTransform: 'uppercase',
     },
     dateCardDaySelected: {
         color: 'rgba(255,255,255,0.8)',
     },
     dateCardDate: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
         color: '#111827',
         marginBottom: 2,
@@ -816,14 +924,16 @@ const styles = StyleSheet.create({
     },
     dateCardMonth: {
         fontSize: 12,
-        fontWeight: '500',
         color: '#6B7280',
+        fontWeight: '500',
     },
     dateCardMonthSelected: {
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(255,255,255,0.9)',
     },
+    // Time Selection Styles
     timeSection: {
-        marginBottom: 24,
+        flex: 1,
+        marginBottom: 110,
     },
     timeGrid: {
         flexDirection: 'row',
@@ -833,64 +943,59 @@ const styles = StyleSheet.create({
     },
     timeColumn: {
         alignItems: 'center',
+        height: 200,
     },
     timeLabel: {
         fontSize: 12,
-        fontWeight: '600',
         color: '#6B7280',
         marginBottom: 8,
         textTransform: 'uppercase',
     },
     timeScroll: {
-        height: 200,
         width: 80,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     timeItem: {
         height: 50,
-        width: 80,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F9FAFB',
-        borderRadius: 12,
-        marginBottom: 8,
-        borderWidth: 2,
-        borderColor: '#E5E7EB',
     },
     timeItemSelected: {
         backgroundColor: '#047857',
-        borderColor: '#047857',
     },
     timeItemText: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
-        color: '#111827',
+        color: '#374151',
     },
     timeItemTextSelected: {
         color: '#fff',
-        fontWeight: '700',
     },
     timeSeparator: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: '700',
-        color: '#047857',
-        marginTop: 24,
+        color: '#374151',
+        marginTop: 20,
     },
     modalActions: {
         flexDirection: 'row',
         padding: 24,
-        gap: 12,
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
+        gap: 16,
     },
     cancelButton: {
         flex: 1,
         paddingVertical: 16,
-        borderRadius: 12,
-        backgroundColor: '#F9FAFB',
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: '#E5E7EB',
+        backgroundColor: '#fff',
     },
     cancelText: {
         fontSize: 16,
@@ -898,8 +1003,8 @@ const styles = StyleSheet.create({
         color: '#6B7280',
     },
     confirmButton: {
-        flex: 1,
-        borderRadius: 12,
+        flex: 2,
+        borderRadius: 16,
         overflow: 'hidden',
     },
     confirmGradient: {
@@ -910,8 +1015,95 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     confirmText: {
+        color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    // New Date Picker Styles
+    headerSelectors: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 6,
+    },
+    headerSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    headerSelectorActive: {
+        backgroundColor: '#fff',
+        borderColor: '#fff',
+    },
+    headerSelectorText: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    headerSelectorTextActive: {
+        color: '#047857',
+    },
+    monthGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        rowGap: 12,
+    },
+    monthCard: {
+        width: '31%',
+        aspectRatio: 1.4,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    monthCardSelected: {
+        backgroundColor: '#047857',
+        borderColor: '#047857',
+        shadowColor: '#047857',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    monthText: {
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 16,
+        color: '#374151',
+    },
+    monthTextSelected: {
+        color: '#fff',
+    },
+    yearList: {
+        maxHeight: 300,
+    },
+    yearItem: {
+        paddingVertical: 14,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    yearItemSelected: {
+        backgroundColor: '#047857',
+        borderRadius: 12,
+        borderBottomWidth: 0,
+        marginVertical: 4,
+    },
+    yearText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    yearTextSelected: {
         color: '#fff',
     },
 })
+
