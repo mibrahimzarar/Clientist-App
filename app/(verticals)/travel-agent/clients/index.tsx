@@ -53,11 +53,7 @@ export default function TravelAgentClientsList() {
 
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
-      case 'new': return ['#3B82F6', '#2563EB']
-      case 'in_process': return ['#F59E0B', '#D97706']
-      case 'documents_pending': return ['#EF4444', '#DC2626']
-      case 'submitted': return ['#8B5CF6', '#7C3AED']
-      case 'approved': return ['#10B981', '#059669']
+      case 'in_progress': return ['#F59E0B', '#D97706']
       case 'rejected': return ['#DC2626', '#B91C1C']
       case 'completed': return ['#059669', '#047857']
       default: return ['#6B7280', '#4B5563']
@@ -201,7 +197,7 @@ export default function TravelAgentClientsList() {
     <View style={styles.container}>
       {/* Header with Gradient */}
       <LinearGradient
-        colors={['#4F46E5', '#7C3AED']}
+        colors={['#3B82F6', '#2563EB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -263,7 +259,7 @@ export default function TravelAgentClientsList() {
                 All
               </Text>
             </TouchableOpacity>
-            {(['new', 'in_process', 'completed'] as ClientStatus[]).map((status) => (
+            {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
               <TouchableOpacity
                 key={status}
                 style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}

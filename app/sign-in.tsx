@@ -76,7 +76,7 @@ export default function SignIn() {
             </View>
 
             <Pressable onPress={onSignIn} style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} disabled={loading}>
-              {loading ? <BouncingBallsLoader color="#fff" size={8} /> : <Text style={styles.buttonText}>Sign In</Text>}
+              {loading ? <BouncingBallsLoader color="#fff" size={12} /> : <Text style={styles.buttonText}>Sign In</Text>}
             </Pressable>
 
             <View style={styles.footer}>

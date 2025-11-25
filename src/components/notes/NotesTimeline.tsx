@@ -143,7 +143,7 @@ export const NotesTimeline: React.FC<NotesTimelineProps> = ({ clientId }) => {
                     disabled={!newNote.trim() || submitting}
                 >
                     {submitting ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <BouncingBallsLoader color="#fff" size={8} />
                     ) : (
                         <Ionicons name="send" size={20} color="#fff" />
                     )}

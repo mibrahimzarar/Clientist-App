@@ -187,7 +187,7 @@ export default function NotesPage() {
         <View style={styles.container}>
             {/* Header */}
             <LinearGradient
-                colors={['#4F46E5', '#7C3AED']}
+                colors={['#F59E0B', '#D97706']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.header}

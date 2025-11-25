@@ -648,9 +648,16 @@ export async function getClientAnalytics(): Promise<ApiResponse<ClientAnalytics[
 
 export async function getUpcomingTravels(limit: number = 10): Promise<ApiResponse<UpcomingTravel[]>> {
   try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(today)
+    endDate.setDate(endDate.getDate() + 30)
+
     const { data, error } = await supabase
       .from('upcoming_travels')
       .select('*')
+      .gte('departure_date', today.toISOString())
+      .lte('departure_date', endDate.toISOString())
       .limit(limit)
 
     if (error) throw error
@@ -669,9 +676,16 @@ export async function getUpcomingTravels(limit: number = 10): Promise<ApiRespons
 
 export async function getPendingTasks(limit: number = 10): Promise<ApiResponse<PendingTask[]>> {
   try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(today)
+    endDate.setDate(endDate.getDate() + 30)
+
     const { data, error } = await supabase
       .from('pending_tasks')
       .select('*')
+      .gte('due_date', today.toISOString())
+      .lte('due_date', endDate.toISOString())
       .limit(limit)
 
     if (error) throw error

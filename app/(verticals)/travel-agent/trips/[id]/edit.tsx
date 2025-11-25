@@ -8,22 +8,32 @@ import {
     ScrollView,
     Alert,
     Modal,
-    Platform,
 } from 'react-native'
-import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
-import { router } from 'expo-router'
+import { BouncingBallsLoader } from '../../../../../src/components/ui/BouncingBallsLoader'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { supabase } from '../../../../src/lib/supabase'
-import { useCreateTrip } from '../../../../src/hooks/useTrips'
-import { useClients } from '../../../../src/hooks/useTravelAgent'
-import { TripFormData, TripType, TripStop } from '../../../../src/types/trips'
+import { supabase } from '../../../../../src/lib/supabase'
+import { useTrip, useUpdateTrip } from '../../../../../src/hooks/useTrips'
+import { useClients } from '../../../../../src/hooks/useTravelAgent'
+import { TripFormData, TripType, TripStop } from '../../../../../src/types/trips'
 
-type DatePickerType = 'departure' | 'destination' | 'return_departure' | 'return_destination' | `stop_arrival_${number}` | `stop_departure_${number}` | null
+type DatePickerType =
+    | 'departure'
+    | 'destination'
+    | 'return_departure'
+    | 'return_destination'
+    | `stop_arrival_${number}`
+    | `stop_departure_${number}`
+    | null
 
-export default function NewTrip() {
+export default function EditTrip() {
+    const { id } = useLocalSearchParams<{ id: string }>()
     const [userId, setUserId] = useState<string | null>(null)
+    const { data: tripData, isLoading: tripLoading } = useTrip(id)
+    const updateTrip = useUpdateTrip()
     const [tripType, setTripType] = useState<TripType>('one_way')
+
     const [formData, setFormData] = useState<TripFormData>({
         client_id: '',
         trip_type: 'one_way',
@@ -35,8 +45,16 @@ export default function NewTrip() {
         flight_number: '',
         pnr_number: '',
         notes: '',
+        return_departure_city: '',
+        return_departure_date: '',
+        return_destination_city: '',
+        return_destination_date: '',
+        return_airline: '',
+        return_flight_number: '',
+        return_pnr_number: '',
         stops: [],
     })
+
     const [showClientPicker, setShowClientPicker] = useState(false)
     const [showDatePicker, setShowDatePicker] = useState<DatePickerType>(null)
     const [tempDate, setTempDate] = useState(new Date())
@@ -51,9 +69,36 @@ export default function NewTrip() {
         fetchUser()
     }, [])
 
+    // Load trip data into form
+    useEffect(() => {
+        if (tripData?.data) {
+            const trip = tripData.data
+            setTripType(trip.trip_type || 'one_way')
+            setFormData({
+                client_id: trip.client_id,
+                trip_type: trip.trip_type || 'one_way',
+                departure_city: trip.departure_city,
+                departure_date: trip.departure_date,
+                destination_city: trip.destination_city,
+                destination_date: trip.destination_date,
+                airline: trip.airline || '',
+                flight_number: trip.flight_number || '',
+                pnr_number: trip.pnr_number || '',
+                notes: trip.notes || '',
+                return_departure_city: trip.return_departure_city || '',
+                return_departure_date: trip.return_departure_date || '',
+                return_destination_city: trip.return_destination_city || '',
+                return_destination_date: trip.return_destination_date || '',
+                return_airline: trip.return_airline || '',
+                return_flight_number: trip.return_flight_number || '',
+                return_pnr_number: trip.return_pnr_number || '',
+                stops: trip.stops || [],
+            })
+        }
+    }, [tripData])
+
     const { data: clientsData } = useClients(1, 100)
     const clients = clientsData?.data?.data || []
-    const createTrip = useCreateTrip(userId || '')
 
     const selectedClient = clients.find(c => c.id === formData.client_id)
 
@@ -65,12 +110,12 @@ export default function NewTrip() {
         }
 
         try {
-            await createTrip.mutateAsync(formData)
-            Alert.alert('Success', 'Trip created successfully', [
+            await updateTrip.mutateAsync({ id, data: formData })
+            Alert.alert('Success', 'Trip updated successfully', [
                 { text: 'OK', onPress: () => router.back() }
             ])
         } catch (error) {
-            Alert.alert('Error', 'Failed to create trip. Please try again.')
+            Alert.alert('Error', 'Failed to update trip. Please try again.')
         }
     }
 
@@ -81,6 +126,71 @@ export default function NewTrip() {
         const hours = String(date.getHours()).padStart(2, '0')
         const minutes = String(date.getMinutes()).padStart(2, '0')
         return `${year}-${month}-${day} ${hours}:${minutes}`
+    }
+
+    const handleDateConfirm = () => {
+        const formattedDate = formatDateTime(tempDate)
+        if (showDatePicker === 'departure') {
+            setFormData({ ...formData, departure_date: formattedDate })
+        } else if (showDatePicker === 'destination') {
+            setFormData({ ...formData, destination_date: formattedDate })
+        } else if (showDatePicker === 'return_departure') {
+            setFormData({ ...formData, return_departure_date: formattedDate })
+        } else if (showDatePicker === 'return_destination') {
+            setFormData({ ...formData, return_destination_date: formattedDate })
+        } else if (showDatePicker && showDatePicker.startsWith('stop_')) {
+            const [_, type, indexStr] = showDatePicker.split('_')
+            const stopIndex = parseInt(indexStr)
+            const updatedStops = [...(formData.stops || [])]
+            if (type === 'arrival') {
+                updatedStops[stopIndex] = { ...updatedStops[stopIndex], arrival_date: formattedDate }
+            } else if (type === 'departure') {
+                updatedStops[stopIndex] = { ...updatedStops[stopIndex], departure_date: formattedDate }
+            }
+            setFormData({ ...formData, stops: updatedStops })
+        }
+        setShowDatePicker(null)
+    }
+
+    const openDatePicker = (type: DatePickerType) => {
+        if (!type) return
+        let currentDate = new Date()
+        if (type === 'departure' && formData.departure_date) {
+            currentDate = new Date(formData.departure_date)
+        } else if (type === 'destination' && formData.destination_date) {
+            currentDate = new Date(formData.destination_date)
+        } else if (type === 'return_departure' && formData.return_departure_date) {
+            currentDate = new Date(formData.return_departure_date)
+        } else if (type === 'return_destination' && formData.return_destination_date) {
+            currentDate = new Date(formData.return_destination_date)
+        } else if (type.startsWith('stop_')) {
+            const [_, dateType, indexStr] = type.split('_')
+            const stopIndex = parseInt(indexStr)
+            const stop = formData.stops?.[stopIndex]
+            if (stop) {
+                if (dateType === 'arrival' && stop.arrival_date) {
+                    currentDate = new Date(stop.arrival_date)
+                } else if (dateType === 'departure' && stop.departure_date) {
+                    currentDate = new Date(stop.departure_date)
+                }
+            }
+        }
+        setTempDate(currentDate)
+        setViewDate(currentDate)
+        setViewMode('day')
+        setShowDatePicker(type)
+    }
+
+    const completionPercentage = () => {
+        const fields = [
+            formData.client_id,
+            formData.departure_city,
+            formData.departure_date,
+            formData.destination_city,
+            formData.destination_date,
+        ]
+        const filled = fields.filter(f => f && f.trim()).length
+        return Math.round((filled / fields.length) * 100)
     }
 
     const handleTripTypeChange = (type: TripType) => {
@@ -135,71 +245,18 @@ export default function NewTrip() {
         setFormData({ ...formData, stops: updatedStops })
     }
 
-    const updateStop = (index: number, field: keyof Omit<TripStop, 'id' | 'trip_id' | 'created_at' | 'updated_at'>, value: string | number) => {
+    const updateStop = (index: number, field: string, value: string) => {
         const updatedStops = [...(formData.stops || [])]
         updatedStops[index] = { ...updatedStops[index], [field]: value }
         setFormData({ ...formData, stops: updatedStops })
     }
 
-    const handleDateConfirm = () => {
-        const formattedDate = formatDateTime(tempDate)
-        const pickerType = showDatePicker
-
-        if (pickerType === 'departure') {
-            setFormData({ ...formData, departure_date: formattedDate })
-        } else if (pickerType === 'destination') {
-            setFormData({ ...formData, destination_date: formattedDate })
-        } else if (pickerType === 'return_departure') {
-            setFormData({ ...formData, return_departure_date: formattedDate })
-        } else if (pickerType === 'return_destination') {
-            setFormData({ ...formData, return_destination_date: formattedDate })
-        } else if (pickerType && pickerType.startsWith('stop_arrival_')) {
-            const index = parseInt(pickerType.replace('stop_arrival_', ''))
-            updateStop(index, 'arrival_date', formattedDate)
-        } else if (pickerType && pickerType.startsWith('stop_departure_')) {
-            const index = parseInt(pickerType.replace('stop_departure_', ''))
-            updateStop(index, 'departure_date', formattedDate)
-        }
-        setShowDatePicker(null)
-    }
-
-    const openDatePicker = (type: DatePickerType) => {
-        let currentDate = new Date()
-
-        if (type === 'departure' && formData.departure_date) {
-            currentDate = new Date(formData.departure_date)
-        } else if (type === 'destination' && formData.destination_date) {
-            currentDate = new Date(formData.destination_date)
-        } else if (type === 'return_departure' && formData.return_departure_date) {
-            currentDate = new Date(formData.return_departure_date)
-        } else if (type === 'return_destination' && formData.return_destination_date) {
-            currentDate = new Date(formData.return_destination_date)
-        } else if (type && type.startsWith('stop_arrival_')) {
-            const index = parseInt(type.replace('stop_arrival_', ''))
-            const stopDate = formData.stops?.[index]?.arrival_date
-            if (stopDate) currentDate = new Date(stopDate)
-        } else if (type && type.startsWith('stop_departure_')) {
-            const index = parseInt(type.replace('stop_departure_', ''))
-            const stopDate = formData.stops?.[index]?.departure_date
-            if (stopDate) currentDate = new Date(stopDate)
-        }
-
-        setTempDate(currentDate)
-        setViewDate(currentDate)
-        setViewMode('day')
-        setShowDatePicker(type)
-    }
-
-    const completionPercentage = () => {
-        const fields = [
-            formData.client_id,
-            formData.departure_city,
-            formData.departure_date,
-            formData.destination_city,
-            formData.destination_date,
-        ]
-        const filled = fields.filter(f => f && f.trim()).length
-        return Math.round((filled / fields.length) * 100)
+    if (tripLoading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <BouncingBallsLoader size={12} color="#047857" />
+            </View>
+        )
     }
 
     return (
@@ -215,8 +272,8 @@ export default function NewTrip() {
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>New Trip</Text>
-                    <Text style={styles.headerSubtitle}>Add a new travel itinerary</Text>
+                    <Text style={styles.headerTitle}>Edit Trip</Text>
+                    <Text style={styles.headerSubtitle}>Update travel itinerary</Text>
                 </View>
                 <View style={{ width: 40 }} />
             </LinearGradient>
@@ -273,14 +330,14 @@ export default function NewTrip() {
                     )}
                 </View>
 
-                {/* Trip Type Selector Card */}
+                {/* Trip Type Selector */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="swap-horizontal" size={24} color="#047857" />
+                        <Ionicons name="swap-vertical" size={24} color="#047857" />
                         <Text style={styles.cardTitle}>Trip Type</Text>
                     </View>
 
-                    <View style={styles.tripTypeSelector}>
+                    <View style={styles.tripTypeContainer}>
                         <TouchableOpacity
                             style={[styles.tripTypeButton, tripType === 'one_way' && styles.tripTypeButtonActive]}
                             onPress={() => handleTripTypeChange('one_way')}
@@ -441,10 +498,6 @@ export default function NewTrip() {
                     </View>
                 </View>
 
-
-
-
-
                 {/* Outbound Stops Section - Shows for All Trips */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
@@ -576,7 +629,7 @@ export default function NewTrip() {
                             >
                                 <Ionicons name="calendar" size={20} color="#047857" style={styles.inputIcon} />
                                 <Text style={[styles.dateText, !formData.return_departure_date && styles.placeholderText]}>
-                                    {formData.return_departure_date || 'Select return departure date'}
+                                    {formData.return_departure_date || 'Select date'}
                                 </Text>
                                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
                             </TouchableOpacity>
@@ -608,7 +661,7 @@ export default function NewTrip() {
                             >
                                 <Ionicons name="calendar" size={20} color="#047857" style={styles.inputIcon} />
                                 <Text style={[styles.dateText, !formData.return_destination_date && styles.placeholderText]}>
-                                    {formData.return_destination_date || 'Select return arrival date'}
+                                    {formData.return_destination_date || 'Select date'}
                                 </Text>
                                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
                             </TouchableOpacity>
@@ -777,14 +830,12 @@ export default function NewTrip() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-
-
             {/* Floating Submit Button */}
             <View style={styles.submitContainer}>
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={handleSubmit}
-                    disabled={createTrip.isPending}
+                    disabled={updateTrip.isPending}
                 >
                     <LinearGradient
                         colors={['#047857', '#065F46']}
@@ -792,12 +843,12 @@ export default function NewTrip() {
                         end={{ x: 1, y: 1 }}
                         style={styles.submitGradient}
                     >
-                        {createTrip.isPending ? (
+                        {updateTrip.isPending ? (
                             <BouncingBallsLoader color="#fff" size={8} />
                         ) : (
                             <>
                                 <Ionicons name="checkmark-circle" size={24} color="#fff" />
-                                <Text style={styles.submitText}>Create Trip</Text>
+                                <Text style={styles.submitText}>Update Trip</Text>
                             </>
                         )}
                     </LinearGradient>
@@ -971,20 +1022,15 @@ export default function NewTrip() {
                                                 key={i}
                                                 style={[styles.monthCard, isSelected && styles.monthCardSelected]}
                                                 onPress={() => {
-                                                    // Fix: Set date to 1 to avoid month overflow (e.g. Jan 31 -> Feb -> Mar)
                                                     const newViewDate = new Date(viewDate)
                                                     newViewDate.setDate(1)
                                                     newViewDate.setMonth(i)
                                                     setViewDate(newViewDate)
 
-                                                    // Update tempDate, clamping day if necessary
                                                     const newTempDate = new Date(tempDate)
                                                     const currentDay = newTempDate.getDate()
-                                                    // Set to 1st of target month/year first
                                                     newTempDate.setFullYear(viewDate.getFullYear(), i, 1)
-                                                    // Get max days in target month
                                                     const daysInMonth = new Date(viewDate.getFullYear(), i + 1, 0).getDate()
-                                                    // Restore day, clamped to max days
                                                     newTempDate.setDate(Math.min(currentDay, daysInMonth))
                                                     setTempDate(newTempDate)
 
@@ -1010,21 +1056,18 @@ export default function NewTrip() {
                                                 key={i}
                                                 style={[styles.yearItem, isSelected && styles.yearItemSelected]}
                                                 onPress={() => {
-                                                    // Fix: Handle leap year overflow for viewDate
                                                     const newViewDate = new Date(viewDate)
-                                                    newViewDate.setDate(1) // Safe day
+                                                    newViewDate.setDate(1)
                                                     newViewDate.setFullYear(year)
                                                     setViewDate(newViewDate)
 
-                                                    // Update tempDate, handling leap year (Feb 29 -> Feb 28)
                                                     const newTempDate = new Date(tempDate)
                                                     const currentMonth = newTempDate.getMonth()
                                                     const currentDay = newTempDate.getDate()
 
                                                     newTempDate.setFullYear(year)
-                                                    // Check if month changed due to overflow (e.g. Feb 29 -> Mar 1)
                                                     if (newTempDate.getMonth() !== currentMonth) {
-                                                        newTempDate.setDate(0) // Go back to last day of previous month (Feb 28/29)
+                                                        newTempDate.setDate(0)
                                                     }
                                                     setTempDate(newTempDate)
 
@@ -1070,6 +1113,7 @@ export default function NewTrip() {
     )
 }
 
+// Styles (same as new.tsx but you can customize if needed)
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -1231,48 +1275,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6B7280',
     },
-    textArea: {
-        backgroundColor: '#F9FAFB',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        color: '#111827',
-        minHeight: 100,
-    },
-    submitContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 20,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-    },
-    submitButton: {
-        borderRadius: 16,
-        overflow: 'hidden',
-        shadowColor: '#047857',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    submitGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        gap: 8,
-    },
-    submitText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    // Date Input Styles
     dateInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1289,10 +1291,51 @@ const styles = StyleSheet.create({
         color: '#111827',
         marginLeft: 12,
     },
-    // Modal Styles
+    textArea: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        color: '#111827',
+        minHeight: 100,
+    },
+    submitContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    submitButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    submitGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        gap: 8,
+    },
+    submitText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
     },
     modalContent: {
@@ -1366,15 +1409,6 @@ const styles = StyleSheet.create({
     dateCardDateSelected: {
         color: '#fff',
     },
-    dateCardMonth: {
-        fontSize: 12,
-        color: '#6B7280',
-        fontWeight: '500',
-    },
-    dateCardMonthSelected: {
-        color: 'rgba(255,255,255,0.9)',
-    },
-    // Time Selection Styles
     timeSection: {
         flex: 1,
         marginBottom: 110,
@@ -1463,7 +1497,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
-    // New Date Picker Styles
     headerSelectors: {
         flexDirection: 'row',
         gap: 8,
@@ -1549,27 +1582,28 @@ const styles = StyleSheet.create({
     yearTextSelected: {
         color: '#fff',
     },
-    tripTypeSelector: {
+    tripTypeContainer: {
         flexDirection: 'row',
         gap: 12,
     },
     tripTypeButton: {
         flex: 1,
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F0FDF4',
+        paddingVertical: 16,
+        paddingHorizontal: 12,
         borderWidth: 2,
         borderColor: '#047857',
         borderRadius: 12,
-        paddingVertical: 16,
+        backgroundColor: '#F9FAFB',
         gap: 8,
     },
     tripTypeButtonActive: {
         backgroundColor: '#047857',
     },
     tripTypeText: {
-        fontSize: 13,
+        fontSize: 15,
         fontWeight: '600',
         color: '#047857',
     },
@@ -1622,4 +1656,3 @@ const styles = StyleSheet.create({
         color: '#047857',
     },
 })
-

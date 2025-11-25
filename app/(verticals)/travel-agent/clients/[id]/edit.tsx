@@ -40,11 +40,7 @@ const priorityOptions = [
 ]
 
 const statusOptions = [
-    { value: 'new', label: 'New' },
-    { value: 'in_process', label: 'In Process' },
-    { value: 'documents_pending', label: 'Documents Pending' },
-    { value: 'submitted', label: 'Submitted' },
-    { value: 'approved', label: 'Approved' },
+    { value: 'in_progress', label: 'In Progress' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'completed', label: 'Completed' },
 ]
@@ -61,7 +57,7 @@ export default function EditClient() {
         country: '',
         package_type: 'umrah_package' as PackageType,
         lead_source: 'walk_in' as LeadSource,
-        status: 'new' as ClientStatus,
+        status: 'in_progress' as ClientStatus,
         priority_tag: 'normal' as PriorityTag,
         notes: '',
     })
@@ -78,7 +74,7 @@ export default function EditClient() {
                 country: client.country || '',
                 package_type: client.package_type || 'umrah_package',
                 lead_source: client.lead_source || 'walk_in',
-                status: client.status || 'new',
+                status: client.status || 'in_progress',
                 priority_tag: client.priority_tag || 'normal',
                 notes: client.notes || '',
             })

@@ -7,13 +7,14 @@ import {
   StyleSheet,
   TextInput,
   RefreshControl,
+  Alert,
 } from 'react-native'
 import { BouncingBallsLoader } from '../../../src/components/ui/BouncingBallsLoader'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '../../../src/lib/supabase'
-import { useTrips } from '../../../src/hooks/useTrips'
+import { useTrips, useDeleteTrip } from '../../../src/hooks/useTrips'
 import { Trip } from '../../../src/types/trips'
 
 export default function TripsPage() {
@@ -34,6 +35,7 @@ export default function TripsPage() {
     client_id: clientId
   })
   const trips = data?.data || []
+  const deleteTrip = useDeleteTrip()
 
   if (isLoading && !trips.length) {
     return (
@@ -48,6 +50,57 @@ export default function TripsPage() {
     const destinationDate = new Date(item.destination_date)
     const duration = Math.ceil((destinationDate.getTime() - departureDate.getTime()) / (1000 * 60 * 60 * 24))
 
+    const outboundStops = item.stops?.filter(s => s.leg === 'outbound').sort((a, b) => a.stop_number - b.stop_number) || []
+    const returnStops = item.stops?.filter(s => s.leg === 'return').sort((a, b) => a.stop_number - b.stop_number) || []
+
+    const renderLeg = (
+      origin: string,
+      destination: string,
+      date: string,
+      stops: typeof outboundStops,
+      label: string,
+      icon: string
+    ) => (
+      <View style={styles.legContainer}>
+        <View style={styles.legHeader}>
+          <View style={styles.legLabelContainer}>
+            <Ionicons name={icon as any} size={14} color="#6B7280" />
+            <Text style={styles.legLabel}>{label}</Text>
+          </View>
+          <Text style={styles.legDate}>
+            {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}
+          </Text>
+        </View>
+
+        <View style={styles.routeRow}>
+          {/* Origin */}
+          <View style={styles.routeNode}>
+            <Text style={styles.cityCode}>{origin.substring(0, 3).toUpperCase()}</Text>
+            <Text style={styles.cityName} numberOfLines={1}>{origin}</Text>
+          </View>
+
+          {/* Path & Stops */}
+          <View style={styles.routePath}>
+            <View style={styles.pathLine} />
+            {stops.map((stop, index) => (
+              <View key={index} style={styles.stopNode}>
+                <View style={styles.stopDot} />
+                <Text style={styles.stopCode}>{stop.city.substring(0, 3).toUpperCase()}</Text>
+              </View>
+            ))}
+            <Ionicons name="airplane" size={16} color="#047857" style={styles.pathPlane} />
+            <View style={styles.pathLine} />
+          </View>
+
+          {/* Destination */}
+          <View style={styles.routeNode}>
+            <Text style={styles.cityCode}>{destination.substring(0, 3).toUpperCase()}</Text>
+            <Text style={styles.cityName} numberOfLines={1}>{destination}</Text>
+          </View>
+        </View>
+      </View>
+    )
+
     return (
       <TouchableOpacity
         style={styles.tripCard}
@@ -55,70 +108,96 @@ export default function TripsPage() {
         activeOpacity={0.7}
       >
         <LinearGradient
-          colors={['#047857', '#065F46']}
+          colors={item.trip_type === 'return' ? ['#047857', '#065F46'] : ['#059669', '#047857']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.tripHeader}
         >
-          <View style={styles.routeContainer}>
-            <View style={styles.cityContainer}>
-              <Text style={styles.cityCode}>{item.departure_city.substring(0, 3).toUpperCase()}</Text>
-              <Text style={styles.cityName}>{item.departure_city}</Text>
-            </View>
-
-            <View style={styles.flightPath}>
-              <View style={styles.pathLine} />
-              <Ionicons name="airplane" size={20} color="#fff" style={styles.planeIcon} />
-              <View style={styles.pathLine} />
-            </View>
-
-            <View style={styles.cityContainer}>
-              <Text style={styles.cityCode}>{item.destination_city.substring(0, 3).toUpperCase()}</Text>
-              <Text style={styles.cityName}>{item.destination_city}</Text>
-            </View>
+          <View style={styles.tripTypeContainer}>
+            <Ionicons
+              name={item.trip_type === 'return' ? 'swap-horizontal' : 'arrow-forward'}
+              size={18}
+              color="#fff"
+            />
+            <Text style={styles.tripTypeText}>
+              {item.trip_type === 'return' ? 'Round Trip' : 'One-way Trip'}
+            </Text>
           </View>
-
           <Text style={styles.duration}>{duration} {duration === 1 ? 'day' : 'days'}</Text>
         </LinearGradient>
 
         <View style={styles.tripDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="person" size={16} color="#4F46E5" />
-            <Text style={styles.detailText}>{item.client?.full_name || 'No client'}</Text>
-          </View>
-
-          <View style={styles.dateRow}>
-            <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Departure</Text>
-              <Text style={styles.dateValue}>
-                {departureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
-            <View style={styles.dateItem}>
-              <Text style={styles.dateLabel}>Arrival</Text>
-              <Text style={styles.dateValue}>
-                {destinationDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </Text>
-            </View>
-          </View>
-
-          {(item.airline || item.pnr_number) && (
-            <View style={styles.flightInfo}>
-              {item.airline && (
-                <View style={styles.infoChip}>
-                  <Ionicons name="airplane-outline" size={14} color="#6B7280" />
-                  <Text style={styles.infoText}>{item.airline}</Text>
-                </View>
-              )}
-              {item.pnr_number && (
-                <View style={styles.infoChip}>
-                  <Ionicons name="ticket-outline" size={14} color="#6B7280" />
-                  <Text style={styles.infoText}>{item.pnr_number}</Text>
-                </View>
-              )}
-            </View>
+          {/* Outbound Leg */}
+          {renderLeg(
+            item.departure_city,
+            item.destination_city,
+            item.departure_date,
+            outboundStops,
+            'Outbound',
+            'airplane-outline'
           )}
+
+          {/* Return Leg - Only for Round Trips */}
+          {item.trip_type === 'return' && (
+            <>
+              <View style={styles.legDivider} />
+              {renderLeg(
+                item.return_departure_city || item.destination_city,
+                item.return_destination_city || item.departure_city,
+                item.return_departure_date || item.destination_date, // Fallback to dest date if return date missing
+                returnStops,
+                'Return',
+                'airplane'
+              )}
+            </>
+          )}
+
+          {/* Footer Info */}
+          <View style={styles.cardFooter}>
+            <View style={styles.clientInfo}>
+              <View style={styles.clientAvatar}>
+                <Text style={styles.clientInitials}>
+                  {item.client?.full_name?.substring(0, 2).toUpperCase() || 'NA'}
+                </Text>
+              </View>
+              <Text style={styles.clientName}>{item.client?.full_name || 'No client'}</Text>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  router.push(`/(verticals)/travel-agent/trips/${item.id}/edit`)
+                }}
+              >
+                <Ionicons name="pencil" size={18} color="#047857" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  Alert.alert(
+                    'Delete Trip',
+                    `Are you sure you want to delete this trip?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await deleteTrip.mutateAsync(item.id)
+                          refetch()
+                        }
+                      }
+                    ]
+                  )
+                }}
+              >
+                <Ionicons name="trash" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </TouchableOpacity>
     )
@@ -471,5 +550,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  editButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+    paddingVertical: 10,
+    gap: 6,
   },
 })

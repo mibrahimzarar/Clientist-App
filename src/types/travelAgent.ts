@@ -1,7 +1,7 @@
 // Travel Agent Management System Types
 
 // Enum types matching the database schema
-export type ClientStatus = 'new' | 'in_process' | 'documents_pending' | 'submitted' | 'approved' | 'rejected' | 'completed'
+export type ClientStatus = 'in_progress' | 'rejected' | 'completed'
 export type PackageType = 'umrah_package' | 'tourist_visa' | 'ticketing' | 'visit_visa'
 export type LeadSource = 'facebook' | 'referral' | 'walk_in'
 export type PriorityTag = 'normal' | 'priority' | 'urgent' | 'vip'

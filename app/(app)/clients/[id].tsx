@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native'
+import { BouncingBallsLoader } from '../../../src/components/ui/BouncingBallsLoader'
 import { NotesTimeline } from '../../../src/components/notes/NotesTimeline'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -76,11 +77,7 @@ export default function TravelAgentClientDetail() {
 
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
-      case 'new': return ['#3B82F6', '#2563EB']
-      case 'in_process': return ['#F59E0B', '#D97706']
-      case 'documents_pending': return ['#EF4444', '#DC2626']
-      case 'submitted': return ['#8B5CF6', '#7C3AED']
-      case 'approved': return ['#10B981', '#059669']
+      case 'in_progress': return ['#F59E0B', '#D97706']
       case 'rejected': return ['#DC2626', '#B91C1C']
       case 'completed': return ['#059669', '#047857']
       default: return ['#6B7280', '#4B5563']
@@ -109,7 +106,7 @@ export default function TravelAgentClientDetail() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading client details...</Text>
+        <BouncingBallsLoader size={16} />
       </View>
     )
   }
@@ -198,7 +195,7 @@ export default function TravelAgentClientDetail() {
       {/* Status Picker Modal */}
       {showStatusPicker && (
         <View style={styles.pickerContainer}>
-          {(['new', 'in_process', 'documents_pending', 'submitted', 'approved', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
+          {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
             <TouchableOpacity
               key={status}
               style={styles.pickerItem}
@@ -338,6 +335,21 @@ export default function TravelAgentClientDetail() {
             >
               <Ionicons name="card" size={28} color="#fff" />
               <Text style={styles.actionText}>Payments</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push(`/(app)/clients/${id}/tasks`)}
+          >
+            <LinearGradient
+              colors={['#4F46E5', '#7C3AED']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionGradient}
+            >
+              <Ionicons name="checkbox" size={28} color="#fff" />
+              <Text style={styles.actionText}>Tasks</Text>
             </LinearGradient>
           </TouchableOpacity>
 

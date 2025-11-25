@@ -28,6 +28,10 @@ export async function getTrips(userId: string, filters?: TripFilters) {
       query = query.lte('departure_date', filters.to_date)
     }
 
+    if (filters?.trip_type) {
+      query = query.eq('trip_type', filters.trip_type)
+    }
+
     const { data, error } = await query
 
     if (error) throw error
@@ -40,7 +44,8 @@ export async function getTrips(userId: string, filters?: TripFilters) {
 
 export async function getTripById(id: string) {
   try {
-    const { data, error } = await supabase
+    // Fetch trip with client and stops
+    const { data: tripData, error: tripError } = await supabase
       .from('travel_trips')
       .select(`
         *,
@@ -49,8 +54,25 @@ export async function getTripById(id: string) {
       .eq('id', id)
       .single()
 
-    if (error) throw error
-    return { data: data as Trip, error: null }
+    if (tripError) throw tripError
+
+    // Fetch stops if trip has them
+    const { data: stops, error: stopsError } = await supabase
+      .from('trip_stops')
+      .select('*')
+      .eq('trip_id', id)
+      .order('stop_number', { ascending: true })
+
+    if (stopsError) {
+      console.error('Error fetching stops:', stopsError)
+    }
+
+    const trip = {
+      ...tripData,
+      stops: stops || []
+    } as Trip
+
+    return { data: trip, error: null }
   } catch (error) {
     console.error('Error fetching trip:', error)
     return { data: null, error }
@@ -59,10 +81,14 @@ export async function getTripById(id: string) {
 
 export async function createTrip(userId: string, tripData: TripFormData) {
   try {
-    const { data, error } = await supabase
+    // Extract stops from trip data
+    const { stops, ...tripFields } = tripData
+
+    // Insert trip
+    const { data: trip, error: tripError } = await supabase
       .from('travel_trips')
       .insert({
-        ...tripData,
+        ...tripFields,
         created_by: userId,
       })
       .select(`
@@ -71,8 +97,35 @@ export async function createTrip(userId: string, tripData: TripFormData) {
       `)
       .single()
 
-    if (error) throw error
-    return { data: data as Trip, error: null }
+    if (tripError) throw tripError
+
+    // Insert stops if provided
+    let stopsData = []
+    if (stops && stops.length > 0 && trip) {
+      const stopsToInsert = stops.map((stop) => ({
+        ...stop,
+        trip_id: trip.id,
+      }))
+
+      const { data: insertedStops, error: stopsError } = await supabase
+        .from('trip_stops')
+        .insert(stopsToInsert)
+        .select()
+
+      if (stopsError) {
+        console.error('Error inserting stops:', stopsError)
+      } else {
+        stopsData = insertedStops || []
+      }
+    }
+
+    return {
+      data: {
+        ...trip,
+        stops: stopsData
+      } as Trip,
+      error: null
+    }
   } catch (error) {
     console.error('Error creating trip:', error)
     return { data: null, error }
@@ -81,9 +134,13 @@ export async function createTrip(userId: string, tripData: TripFormData) {
 
 export async function updateTrip(id: string, tripData: Partial<TripFormData>) {
   try {
-    const { data, error } = await supabase
+    // Extract stops from trip data
+    const { stops, ...tripFields } = tripData
+
+    // Update trip
+    const { data: trip, error: tripError } = await supabase
       .from('travel_trips')
-      .update(tripData)
+      .update(tripFields)
       .eq('id', id)
       .select(`
         *,
@@ -91,8 +148,53 @@ export async function updateTrip(id: string, tripData: Partial<TripFormData>) {
       `)
       .single()
 
-    if (error) throw error
-    return { data: data as Trip, error: null }
+    if (tripError) throw tripError
+
+    // Handle stops update if provided
+    let stopsData = []
+    if (stops !== undefined) {
+      // Delete existing stops
+      await supabase
+        .from('trip_stops')
+        .delete()
+        .eq('trip_id', id)
+
+      // Insert new stops if any
+      if (stops && stops.length > 0) {
+        const stopsToInsert = stops.map((stop) => ({
+          ...stop,
+          trip_id: id,
+        }))
+
+        const { data: insertedStops, error: stopsError } = await supabase
+          .from('trip_stops')
+          .insert(stopsToInsert)
+          .select()
+
+        if (stopsError) {
+          console.error('Error updating stops:', stopsError)
+        } else {
+          stopsData = insertedStops || []
+        }
+      }
+    } else {
+      // Fetch existing stops if not updating them
+      const { data: existingStops } = await supabase
+        .from('trip_stops')
+        .select('*')
+        .eq('trip_id', id)
+        .order('stop_number', { ascending: true })
+
+      stopsData = existingStops || []
+    }
+
+    return {
+      data: {
+        ...trip,
+        stops: stopsData
+      } as Trip,
+      error: null
+    }
   } catch (error) {
     console.error('Error updating trip:', error)
     return { data: null, error }

@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { CalendarWidget } from '../calendar/CalendarWidget'
 
 const { width } = Dimensions.get('window')
 
@@ -126,11 +127,11 @@ export default function TravelAgentDashboard() {
                 {/* Quick Actions */}
                 <Text style={styles.sectionTitle}>Quick Actions</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionsScroll} contentContainerStyle={styles.actionsContainer}>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/clients/new')}>
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/clients')}>
                         <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.actionIcon}>
-                            <Ionicons name="person-add" size={24} color="#fff" />
+                            <Ionicons name="people" size={25} color="#fff" />
                         </LinearGradient>
-                        <Text style={styles.actionText}>Add Client</Text>
+                        <Text style={styles.actionText}>Clients</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/trips')}>
@@ -142,9 +143,23 @@ export default function TravelAgentDashboard() {
 
                     <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/notes')}>
                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.actionIcon}>
-                            <Ionicons name="document-text" size={24} color="#fff" />
+                            <Ionicons name="create" size={24} color="#fff" />
                         </LinearGradient>
                         <Text style={styles.actionText}>Notes</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/tasks')}>
+                        <LinearGradient colors={['#ba509eff', '#ae0e83ff']} style={styles.actionIcon}>
+                            <Ionicons name="checkbox" size={24} color="#fff" />
+                        </LinearGradient>
+                        <Text style={styles.actionText}>Tasks</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/documents')}>
+                        <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.actionIcon}>
+                            <Ionicons name="document-text" size={24} color="#fff" />
+                        </LinearGradient>
+                        <Text style={styles.actionText}>Documents</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={signOut}>
@@ -154,6 +169,9 @@ export default function TravelAgentDashboard() {
                         <Text style={styles.actionText}>Sign Out</Text>
                     </TouchableOpacity>
                 </ScrollView>
+
+                {/* Calendar Widget */}
+                <CalendarWidget />
 
                 {/* Recent Clients Widget */}
                 <View style={styles.sectionHeader}>
@@ -227,7 +245,7 @@ export default function TravelAgentDashboard() {
                                 <Ionicons name="airplane" size={20} color="#fff" />
                                 <Text style={styles.widgetTitle}>Upcoming Travels</Text>
                             </View>
-                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/clients')}>
+                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/trips')}>
                                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
                             </TouchableOpacity>
                         </LinearGradient>
@@ -240,7 +258,7 @@ export default function TravelAgentDashboard() {
                                     onPress={() => router.push(`/(verticals)/travel-agent/clients/${travel.client_id}`)}
                                 >
                                     <View style={styles.widgetItemIcon}>
-                                        <Ionicons name="person" size={16} color="#10B981" />
+                                        <Ionicons name="airplane" size={16} color="#10B981" />
                                     </View>
                                     <View style={styles.widgetItemContent}>
                                         <Text style={styles.widgetItemTitle}>{travel.full_name}</Text>
@@ -262,7 +280,7 @@ export default function TravelAgentDashboard() {
                     {/* Pending Tasks Widget */}
                     <View style={styles.widget}>
                         <LinearGradient
-                            colors={['#F59E0B', '#D97706']}
+                            colors={['#ba509eff', '#ae0e83ff']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.widgetHeader}
@@ -271,7 +289,7 @@ export default function TravelAgentDashboard() {
                                 <Ionicons name="checkbox" size={20} color="#fff" />
                                 <Text style={styles.widgetTitle}>Pending Tasks</Text>
                             </View>
-                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/clients')}>
+                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/tasks')}>
                                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
                             </TouchableOpacity>
                         </LinearGradient>
@@ -283,14 +301,11 @@ export default function TravelAgentDashboard() {
                                     style={styles.widgetItem}
                                     onPress={() => router.push(`/(verticals)/travel-agent/clients/${task.client_id}`)}
                                 >
-                                    <View style={[
-                                        styles.widgetItemIcon,
-                                        { backgroundColor: task.urgency === 'overdue' ? '#FEE2E2' : '#FEF3C7' }
-                                    ]}>
+                                    <View style={styles.widgetItemIcon}>
                                         <Ionicons
-                                            name={task.urgency === 'overdue' ? 'warning' : 'time'}
+                                            name="checkbox"
                                             size={16}
-                                            color={task.urgency === 'overdue' ? '#EF4444' : '#F59E0B'}
+                                            color="#ba509eff"
                                         />
                                     </View>
                                     <View style={styles.widgetItemContent}>
