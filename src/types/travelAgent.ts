@@ -1,9 +1,10 @@
 // Travel Agent Management System Types
 
 // Enum types matching the database schema
-export type ClientStatus = 'in_progress' | 'rejected' | 'completed'
+export type ClientStatus = 'pending' | 'in_progress' | 'rejected' | 'completed'
 export type PackageType = 'umrah_package' | 'tourist_visa' | 'ticketing' | 'visit_visa'
-export type LeadSource = 'facebook' | 'referral' | 'walk_in'
+export type LeadSource = 'facebook' | 'referral' | 'walk_in' | 'whatsapp' | 'instagram' | 'website' | 'google' | 'other'
+export type LeadStatus = 'potential' | 'call_later' | 'interested' | 'not_interested' | 'converted'
 export type PriorityTag = 'normal' | 'priority' | 'urgent' | 'vip'
 export type ReminderType = 'follow_up' | 'payment' | 'document_submission' | 'travel_date' | 'visa_expiry'
 export type FileType = 'passport_scan' | 'visa_scan' | 'payment_receipt' | 'ticket_pdf' | 'hotel_confirmation' | 'cnic_scan' | 'other'
@@ -160,17 +161,19 @@ export type UpcomingTravel = {
 }
 
 export type PendingTask = {
+  id: string
   client_id: string
+  title: string
+  description?: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  due_date: string
+  status: 'pending' | 'in_progress' | 'completed'
+  is_reminder_enabled: boolean
+  created_at: string
+  created_by: string
   full_name: string
   phone_number: string
-  client_status: ClientStatus
-  reminder_id: string
-  reminder_title: string
-  reminder_description?: string
-  reminder_type: ReminderType
-  due_date: string
-  is_completed: boolean
-  urgency: 'overdue' | 'due_soon' | 'upcoming'
+  email?: string
 }
 
 export type PaymentSummary = {
@@ -288,4 +291,78 @@ export type ClientNote = {
   is_pinned: boolean
   created_at: string
   created_by?: string
+}
+
+// Lead Management Types
+export type Lead = {
+  id: string
+  full_name: string
+  phone_number: string
+  email?: string
+  country?: string
+  lead_status: LeadStatus
+  lead_source: LeadSource
+  follow_up_date?: string
+  notes?: string
+  tags?: string[]
+  priority_tag: PriorityTag
+  interested_package?: PackageType
+  profile_picture_url?: string
+  converted_client_id?: string
+  converted_at?: string
+  created_at: string
+  updated_at: string
+  created_by?: string
+  updated_by?: string
+}
+
+export type LeadNote = {
+  id: string
+  lead_id: string
+  content: string
+  type: string
+  created_at: string
+  created_by?: string
+}
+
+export type LeadFormData = {
+  full_name: string
+  phone_number: string
+  email?: string
+  country?: string
+  lead_status?: LeadStatus
+  lead_source: LeadSource
+  follow_up_date?: string
+  notes?: string
+  tags?: string[]
+  priority_tag?: PriorityTag
+  interested_package?: PackageType
+}
+
+export type LeadStatistics = {
+  total_leads: number
+  potential_leads: number
+  interested_leads: number
+  converted_leads: number
+  todays_followups: number
+  overdue_followups: number
+}
+
+export type TodaysFollowUp = {
+  id: string
+  full_name: string
+  phone_number: string
+  email?: string
+  lead_status: LeadStatus
+  lead_source: LeadSource
+  follow_up_date: string
+  notes?: string
+  tags?: string[]
+  priority_tag: PriorityTag
+  interested_package?: PackageType
+  created_by?: string
+}
+
+export type UpcomingFollowUp = TodaysFollowUp & {
+  urgency: 'today' | 'tomorrow' | 'this_week' | 'later'
 }

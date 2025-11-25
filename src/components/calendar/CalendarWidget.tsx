@@ -12,6 +12,7 @@ interface DayData {
     date: Date
     hasTrip: boolean
     hasTask: boolean
+    hasLead: boolean
     isToday: boolean
 }
 
@@ -51,6 +52,15 @@ export function CalendarWidget() {
                 .gte('due_date', today.toISOString())
                 .lte('due_date', endDate.toISOString())
 
+            // Fetch leads with follow-up dates
+            const { data: leads } = await supabase
+                .from('leads')
+                .select('follow_up_date')
+                .eq('created_by', user.id)
+                .not('lead_status', 'in', '(converted,not_interested)')
+                .gte('follow_up_date', today.toISOString().split('T')[0])
+                .lte('follow_up_date', endDate.toISOString().split('T')[0])
+
             // Create trip dates set
             const tripDates = new Set<string>()
             trips?.forEach(trip => {
@@ -76,6 +86,16 @@ export function CalendarWidget() {
                 }
             })
 
+            // Create lead dates set
+            const leadDates = new Set<string>()
+            leads?.forEach(lead => {
+                if (lead.follow_up_date) {
+                    const date = new Date(lead.follow_up_date)
+                    date.setHours(0, 0, 0, 0)
+                    leadDates.add(date.toDateString())
+                }
+            })
+
             // Build days array
             const days: DayData[] = []
             const todayStr = today.toDateString()
@@ -89,6 +109,7 @@ export function CalendarWidget() {
                     date,
                     hasTrip: tripDates.has(dateStr),
                     hasTask: taskDates.has(dateStr),
+                    hasLead: leadDates.has(dateStr),
                     isToday: dateStr === todayStr,
                 })
             }
@@ -107,6 +128,31 @@ export function CalendarWidget() {
                 {rowDays.map((day, index) => {
                     const dayNum = day.date.getDate()
                     const dayName = day.date.toLocaleDateString('en-US', { weekday: 'short' })
+                    
+                    // Determine border color based on what's scheduled
+                    let borderColor = '#E5E7EB' // default
+                    let borderColors: [string, string] = ['#E5E7EB', '#E5E7EB']
+                    let hasMultiple = false
+                    
+                    if (day.hasTrip && day.hasTask && day.hasLead) {
+                        borderColors = ['#10B981', '#6366F1'] // Green to Indigo
+                        hasMultiple = true
+                    } else if (day.hasTrip && day.hasTask) {
+                        borderColors = ['#10B981', '#ba509eff'] // Green to Purple
+                        hasMultiple = true
+                    } else if (day.hasTrip && day.hasLead) {
+                        borderColors = ['#10B981', '#6366F1'] // Green to Indigo
+                        hasMultiple = true
+                    } else if (day.hasTask && day.hasLead) {
+                        borderColors = ['#ba509eff', '#6366F1'] // Purple to Indigo
+                        hasMultiple = true
+                    } else if (day.hasTrip) {
+                        borderColor = '#10B981' // Green for trip
+                    } else if (day.hasTask) {
+                        borderColor = '#ba509eff' // Purple for task
+                    } else if (day.hasLead) {
+                        borderColor = '#6366F1' // Indigo for lead
+                    }
 
                     return (
                         <View key={index} style={styles.dayCell}>
@@ -119,7 +165,7 @@ export function CalendarWidget() {
                                 >
                                     <Text style={styles.dayNameToday}>{dayName}</Text>
                                     <Text style={styles.dayNumberToday}>{dayNum}</Text>
-                                    {(day.hasTrip || day.hasTask) && (
+                                    {(day.hasTrip || day.hasTask || day.hasLead) && (
                                         <View style={styles.indicators}>
                                             {day.hasTrip && (
                                                 <Ionicons name="airplane" size={8} color="#fff" />
@@ -127,20 +173,63 @@ export function CalendarWidget() {
                                             {day.hasTask && (
                                                 <Ionicons name="checkbox" size={8} color="#fff" />
                                             )}
+                                            {day.hasLead && (
+                                                <Ionicons name="person-add" size={8} color="#fff" />
+                                            )}
                                         </View>
                                     )}
                                 </LinearGradient>
                             ) : (
-                                <View style={styles.dayCard}>
-                                    <Text style={styles.dayName}>{dayName}</Text>
-                                    <Text style={styles.dayNumber}>{dayNum}</Text>
-                                    {(day.hasTrip || day.hasTask) && (
-                                        <View style={styles.indicators}>
-                                            {day.hasTrip && (
-                                                <Ionicons name="airplane" size={8} color="#10B981" />
-                                            )}
-                                            {day.hasTask && (
-                                                <Ionicons name="checkbox" size={8} color="#ba509eff" />
+                                <View style={styles.dayCell}>
+                                    {hasMultiple ? (
+                                        <LinearGradient
+                                            colors={borderColors}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={styles.gradientBorder}
+                                        >
+                                            <View style={styles.dayCardInner}>
+                                                <Text style={styles.dayName}>{dayName}</Text>
+                                                <Text style={styles.dayNumber}>{dayNum}</Text>
+                                                <View style={styles.indicators}>
+                                                    {day.hasTrip && (
+                                                        <Ionicons name="airplane" size={7} color="#10B981" />
+                                                    )}
+                                                    {day.hasTask && (
+                                                        <Ionicons name="checkbox" size={7} color="#ba509eff" />
+                                                    )}
+                                                    {day.hasLead && (
+                                                        <Ionicons name="person-add" size={7} color="#6366F1" />
+                                                    )}
+                                                </View>
+                                            </View>
+                                        </LinearGradient>
+                                    ) : (
+                                        <View style={[styles.dayCard, 
+                                            (day.hasTrip || day.hasTask || day.hasLead) && {
+                                                borderColor: borderColor,
+                                                borderWidth: 2,
+                                                shadowColor: borderColor,
+                                                shadowOffset: { width: 0, height: 0 },
+                                                shadowOpacity: 0.4,
+                                                shadowRadius: 4,
+                                                elevation: 3,
+                                            }
+                                        ]}>
+                                            <Text style={styles.dayName}>{dayName}</Text>
+                                            <Text style={styles.dayNumber}>{dayNum}</Text>
+                                            {(day.hasTrip || day.hasTask || day.hasLead) && (
+                                                <View style={styles.indicators}>
+                                                    {day.hasTrip && (
+                                                        <Ionicons name="airplane" size={7} color="#10B981" />
+                                                    )}
+                                                    {day.hasTask && (
+                                                        <Ionicons name="checkbox" size={7} color="#ba509eff" />
+                                                    )}
+                                                    {day.hasLead && (
+                                                        <Ionicons name="person-add" size={7} color="#6366F1" />
+                                                    )}
+                                                </View>
                                             )}
                                         </View>
                                     )}
@@ -202,6 +291,10 @@ export function CalendarWidget() {
                         <Ionicons name="checkbox" size={12} color="#ba509eff" />
                         <Text style={styles.legendText}>Task</Text>
                     </View>
+                    <View style={styles.legendItem}>
+                        <Ionicons name="person-add" size={12} color="#6366F1" />
+                        <Text style={styles.legendText}>Lead</Text>
+                    </View>
                 </View>
             </View>
         </View>
@@ -262,9 +355,25 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1.5,
-        borderColor: '#E5E7EB',
         padding: 4,
+    },
+    gradientBorder: {
+        flex: 1,
+        borderRadius: 10,
+        padding: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    dayCardInner: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 3,
     },
     dayCardGradient: {
         flex: 1,
@@ -300,7 +409,9 @@ const styles = StyleSheet.create({
     indicators: {
         flexDirection: 'row',
         gap: 2,
-        marginTop: 2,
+        marginTop: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     legend: {
         flexDirection: 'row',

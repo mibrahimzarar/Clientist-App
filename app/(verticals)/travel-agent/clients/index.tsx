@@ -53,6 +53,7 @@ export default function TravelAgentClientsList() {
 
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
+      case 'pending': return ['#6B7280', '#4B5563']
       case 'in_progress': return ['#F59E0B', '#D97706']
       case 'rejected': return ['#DC2626', '#B91C1C']
       case 'completed': return ['#059669', '#047857']

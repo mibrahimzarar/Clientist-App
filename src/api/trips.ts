@@ -35,7 +35,31 @@ export async function getTrips(userId: string, filters?: TripFilters) {
     const { data, error } = await query
 
     if (error) throw error
-    return { data: data as Trip[], error: null }
+
+    let trips = (data || []) as Trip[]
+
+    if (trips.length > 0) {
+      const tripIds = trips.map((t) => t.id)
+      const { data: stopsData } = await supabase
+        .from('trip_stops')
+        .select('*')
+        .in('trip_id', tripIds)
+        .order('stop_number', { ascending: true })
+
+      const stopsByTrip: Record<string, any[]> = {}
+      ;(stopsData || []).forEach((s) => {
+        const key = s.trip_id
+        if (!stopsByTrip[key]) stopsByTrip[key] = []
+        stopsByTrip[key].push(s)
+      })
+
+      trips = trips.map((t) => ({
+        ...t,
+        stops: stopsByTrip[t.id] || []
+      }))
+    }
+
+    return { data: trips, error: null }
   } catch (error) {
     console.error('Error fetching trips:', error)
     return { data: null, error }

@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useDashboardSummary, useClientAnalytics, useUpcomingTravels, usePendingTasks, useClients } from '../../hooks/useTravelAgent'
+import { useTodaysFollowUps, useLeadStatistics } from '../../hooks/useLeads'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CalendarWidget } from '../calendar/CalendarWidget'
+import TopStatsWidget from '../dashboard/TopStatsWidget'
 
 const { width } = Dimensions.get('window')
 
@@ -15,12 +17,69 @@ export default function TravelAgentDashboard() {
     const insets = useSafeAreaInsets()
     const { data: dashboardData, isLoading: dashboardLoading } = useDashboardSummary()
     const { data: analyticsData } = useClientAnalytics()
-    const { data: upcomingTravels } = useUpcomingTravels(5)
-    const { data: pendingTasks } = usePendingTasks(5)
+    const { data: upcomingTravels } = useUpcomingTravels(100) // Get more items
+    const { data: pendingTasks } = usePendingTasks(100) // Get more items
     const { data: clientsData } = useClients(1, 10)
+    const { data: todaysFollowUpsData } = useTodaysFollowUps()
+    const { data: leadStatsData } = useLeadStatistics()
     const [companyLogo, setCompanyLogo] = useState<string | null>(null)
 
     const clients = clientsData?.data?.data || []
+    const todaysFollowUps = todaysFollowUpsData?.data || []
+    const leadStats = leadStatsData?.data
+
+    // Prepare notifications for the widget
+    const todaysNotifications = []
+    
+    // Add trip notifications
+    if (upcomingTravels?.data && upcomingTravels.data.length > 0) {
+        const todaysTrips = upcomingTravels.data.filter(travel => {
+            const travelDate = new Date(travel.departure_date || '')
+            const today = new Date()
+            return travelDate.toDateString() === today.toDateString()
+        })
+        if (todaysTrips.length > 0) {
+            todaysNotifications.push({
+                id: 'trips',
+                type: 'trip' as const,
+                title: 'Trips Today',
+                subtitle: `${todaysTrips.length} ${todaysTrips.length === 1 ? 'client departing' : 'clients departing'} today`,
+                count: todaysTrips.length,
+                route: '/(verticals)/travel-agent/trips'
+            })
+        }
+    }
+    
+    // Add task notifications
+    if (pendingTasks?.data && pendingTasks.data.length > 0) {
+        const todaysTasks = pendingTasks.data.filter(task => {
+            const taskDate = new Date(task.due_date)
+            const today = new Date()
+            return taskDate.toDateString() === today.toDateString()
+        })
+        if (todaysTasks.length > 0) {
+            todaysNotifications.push({
+                id: 'tasks',
+                type: 'task' as const,
+                title: 'Tasks Due Today',
+                subtitle: `${todaysTasks.length} ${todaysTasks.length === 1 ? 'task needs' : 'tasks need'} attention`,
+                count: todaysTasks.length,
+                route: '/(verticals)/travel-agent/tasks'
+            })
+        }
+    }
+    
+    // Add lead follow-up notifications
+    if (todaysFollowUps.length > 0) {
+        todaysNotifications.push({
+            id: 'leads',
+            type: 'lead' as const,
+            title: 'Lead Follow-ups',
+            subtitle: `${todaysFollowUps.length} ${todaysFollowUps.length === 1 ? 'lead to' : 'leads to'} contact today`,
+            count: todaysFollowUps.length,
+            route: '/(verticals)/travel-agent/leads'
+        })
+    }
 
     useFocusEffect(
         React.useCallback(() => {
@@ -53,11 +112,8 @@ export default function TravelAgentDashboard() {
 
     const getStatusColor = (status: string): [string, string] => {
         switch (status) {
-            case 'new': return ['#3B82F6', '#2563EB']
-            case 'in_process': return ['#F59E0B', '#D97706']
-            case 'documents_pending': return ['#EF4444', '#DC2626']
-            case 'submitted': return ['#8B5CF6', '#7C3AED']
-            case 'approved': return ['#10B981', '#059669']
+            case 'pending': return ['#6B7280', '#4B5563']
+            case 'in_progress': return ['#F59E0B', '#D97706']
             case 'rejected': return ['#DC2626', '#B91C1C']
             case 'completed': return ['#059669', '#047857']
             default: return ['#6B7280', '#4B5563']
@@ -90,39 +146,15 @@ export default function TravelAgentDashboard() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Hero Card */}
-                <LinearGradient
-                    colors={['#4F46E5', '#7C3AED']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.heroCard}
-                >
-                    <View style={styles.heroContent}>
-                        <View>
-                            <Text style={styles.heroLabel}>Total Clients</Text>
-                            <Text style={styles.heroNumber}>{dashboardData?.data?.total_clients || 0}</Text>
-                        </View>
-                        <View style={styles.heroIconContainer}>
-                            <Ionicons name="people" size={32} color="#fff" />
-                        </View>
-                    </View>
-                    <View style={styles.heroStats}>
-                        <View style={styles.heroStatItem}>
-                            <Text style={styles.heroStatNumber}>{dashboardData?.data?.in_process_clients || 0}</Text>
-                            <Text style={styles.heroStatLabel}>Active</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.heroStatItem}>
-                            <Text style={styles.heroStatNumber}>{dashboardData?.data?.completed_clients || 0}</Text>
-                            <Text style={styles.heroStatLabel}>Completed</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <View style={styles.heroStatItem}>
-                            <Text style={styles.heroStatNumber}>{dashboardData?.data?.urgent_tasks || 0}</Text>
-                            <Text style={styles.heroStatLabel}>Urgent</Text>
-                        </View>
-                    </View>
-                </LinearGradient>
+                {/* Top Stats Widget */}
+                <TopStatsWidget
+                    totalClients={dashboardData?.data?.total_clients || 0}
+                    activeClients={dashboardData?.data?.in_process_clients || 0}
+                    completedClients={dashboardData?.data?.completed_clients || 0}
+                    urgentTasks={dashboardData?.data?.urgent_tasks || 0}
+                    notifications={todaysNotifications}
+                    onClientPress={() => router.push('/(verticals)/travel-agent/clients')}
+                />
 
                 {/* Quick Actions */}
                 <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -141,18 +173,26 @@ export default function TravelAgentDashboard() {
                         <Text style={styles.actionText}>Trips</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/notes')}>
+
+                    {/* <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/notes')}>
                         <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.actionIcon}>
                             <Ionicons name="create" size={24} color="#fff" />
                         </LinearGradient>
                         <Text style={styles.actionText}>Notes</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/tasks')}>
                         <LinearGradient colors={['#ba509eff', '#ae0e83ff']} style={styles.actionIcon}>
                             <Ionicons name="checkbox" size={24} color="#fff" />
                         </LinearGradient>
                         <Text style={styles.actionText}>Tasks</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/leads')}>
+                        <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.actionIcon}>
+                            <Ionicons name="person-add" size={24} color="#fff" />
+                        </LinearGradient>
+                        <Text style={styles.actionText}>Leads</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/travel-agent/documents')}>
@@ -233,6 +273,54 @@ export default function TravelAgentDashboard() {
                 {/* Bottom Widgets Container */}
                 <View style={styles.bottomWidgets}>
 
+                    {/* Today's Lead Follow-ups Widget */}
+                    {todaysFollowUps.length > 0 && (
+                        <View style={styles.widget}>
+                            <LinearGradient
+                                colors={['#6366F1', '#4F46E5']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.widgetHeader}
+                            >
+                                <View style={styles.widgetHeaderContent}>
+                                    <Ionicons name="person-add" size={20} color="#fff" />
+                                    <Text style={styles.widgetTitle}>Today's Lead Follow-ups</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/leads')}>
+                                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
+                                </TouchableOpacity>
+                            </LinearGradient>
+
+                            <View style={styles.widgetContent}>
+                                {todaysFollowUps.slice(0, 3).map((followUp, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.widgetItem}
+                                        onPress={() => router.push(`/(verticals)/travel-agent/leads/${followUp.id}` as any)}
+                                    >
+                                        <View style={styles.widgetItemIcon}>
+                                            <Ionicons name="person" size={16} color="#6366F1" />
+                                        </View>
+                                        <View style={styles.widgetItemContent}>
+                                            <Text style={styles.widgetItemTitle}>{followUp.full_name}</Text>
+                                            <Text style={styles.widgetItemSubtitle}>{followUp.phone_number}</Text>
+                                        </View>
+                                        <View style={[styles.leadStatusBadge, { backgroundColor: '#EEF2FF' }]}>
+                                            <Text style={[styles.leadStatusText, { color: '#6366F1' }]}>
+                                                {followUp.lead_status.replace('_', ' ')}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                                {todaysFollowUps.length === 0 && (
+                                    <View style={styles.widgetEmpty}>
+                                        <Text style={styles.widgetEmptyText}>No follow-ups today</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    )}
+
                     {/* Upcoming Travels Widget */}
                     <View style={styles.widget}>
                         <LinearGradient
@@ -243,38 +331,72 @@ export default function TravelAgentDashboard() {
                         >
                             <View style={styles.widgetHeaderContent}>
                                 <Ionicons name="airplane" size={20} color="#fff" />
-                                <Text style={styles.widgetTitle}>Upcoming Travels</Text>
+                                <Text style={styles.widgetTitle}>Upcoming Travels (30 Days)</Text>
                             </View>
-                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/trips')}>
-                                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-                            </TouchableOpacity>
+                            <View style={styles.countBadge}>
+                                <Text style={styles.countBadgeText}>{upcomingTravels?.data?.length || 0}</Text>
+                            </View>
                         </LinearGradient>
 
-                        <View style={styles.widgetContent}>
-                            {upcomingTravels?.data?.slice(0, 3).map((travel, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.widgetItem}
-                                    onPress={() => router.push(`/(verticals)/travel-agent/clients/${travel.client_id}`)}
-                                >
-                                    <View style={styles.widgetItemIcon}>
-                                        <Ionicons name="airplane" size={16} color="#10B981" />
-                                    </View>
-                                    <View style={styles.widgetItemContent}>
-                                        <Text style={styles.widgetItemTitle}>{travel.full_name}</Text>
-                                        <Text style={styles.widgetItemSubtitle}>{travel.airline} • {travel.pnr_number}</Text>
-                                    </View>
-                                    <Text style={styles.widgetItemDate}>
-                                        {new Date(travel.departure_date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                        <ScrollView 
+                            style={styles.widgetScrollContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {upcomingTravels?.data?.map((travel, index) => {
+                                const departureDate = new Date(travel.departure_date || Date.now())
+                                const today = new Date()
+                                const daysUntil = Math.ceil((departureDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                
+                                let urgencyColor = '#6B7280'
+                                let urgencyBg = '#F3F4F6'
+                                let urgencyText = `${daysUntil}d`
+                                
+                                if (daysUntil === 0) {
+                                    urgencyColor = '#EF4444'
+                                    urgencyBg = '#FEE2E2'
+                                    urgencyText = 'Today'
+                                } else if (daysUntil === 1) {
+                                    urgencyColor = '#F59E0B'
+                                    urgencyBg = '#FEF3C7'
+                                    urgencyText = 'Tomorrow'
+                                } else if (daysUntil <= 7) {
+                                    urgencyColor = '#10B981'
+                                    urgencyBg = '#D1FAE5'
+                                }
+                                
+                                return (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.widgetItem,
+                                            index === (upcomingTravels?.data?.length || 0) - 1 && styles.widgetItemLast
+                                        ]}
+                                        onPress={() => router.push(`/(verticals)/travel-agent/clients/${travel.client_id}`)}
+                                    >
+                                        <View style={styles.widgetItemIcon}>
+                                            <Ionicons name="airplane" size={16} color="#10B981" />
+                                        </View>
+                                        <View style={styles.widgetItemContent}>
+                                            <Text style={styles.widgetItemTitle}>{travel.full_name}</Text>
+                                            <Text style={styles.widgetItemSubtitle}>
+                                                {travel.airline} • {travel.pnr_number}
+                                            </Text>
+                                        </View>
+                                        <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg }]}>
+                                            <Text style={[styles.urgencyBadgeText, { color: urgencyColor }]}>
+                                                {urgencyText}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )
+                            })}
                             {(!upcomingTravels?.data || upcomingTravels.data.length === 0) && (
                                 <View style={styles.widgetEmpty}>
+                                    <Ionicons name="airplane-outline" size={32} color="#D1D5DB" />
                                     <Text style={styles.widgetEmptyText}>No upcoming travels</Text>
                                 </View>
                             )}
-                        </View>
+                        </ScrollView>
                     </View>
 
                     {/* Pending Tasks Widget */}
@@ -287,42 +409,70 @@ export default function TravelAgentDashboard() {
                         >
                             <View style={styles.widgetHeaderContent}>
                                 <Ionicons name="checkbox" size={20} color="#fff" />
-                                <Text style={styles.widgetTitle}>Pending Tasks</Text>
+                                <Text style={styles.widgetTitle}>Pending Tasks (30 Days)</Text>
                             </View>
-                            <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/tasks')}>
-                                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-                            </TouchableOpacity>
+                            <View style={styles.countBadge}>
+                                <Text style={styles.countBadgeText}>{pendingTasks?.data?.length || 0}</Text>
+                            </View>
                         </LinearGradient>
 
-                        <View style={styles.widgetContent}>
-                            {pendingTasks?.data?.slice(0, 3).map((task, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.widgetItem}
-                                    onPress={() => router.push(`/(verticals)/travel-agent/clients/${task.client_id}`)}
-                                >
-                                    <View style={styles.widgetItemIcon}>
-                                        <Ionicons
-                                            name="checkbox"
-                                            size={16}
-                                            color="#ba509eff"
-                                        />
-                                    </View>
-                                    <View style={styles.widgetItemContent}>
-                                        <Text style={styles.widgetItemTitle}>{task.reminder_title}</Text>
-                                        <Text style={styles.widgetItemSubtitle}>{task.full_name}</Text>
-                                    </View>
-                                    <Text style={styles.widgetItemDate}>
-                                        {new Date(task.due_date || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                        <ScrollView 
+                            style={styles.widgetScrollContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {pendingTasks?.data?.map((task, index) => {
+                                const dueDate = new Date(task.due_date || Date.now())
+                                const today = new Date()
+                                const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                
+                                let urgencyColor = '#6B7280'
+                                let urgencyBg = '#F3F4F6'
+                                let urgencyText = `${daysUntil}d`
+                                
+                                if (daysUntil === 0) {
+                                    urgencyColor = '#EF4444'
+                                    urgencyBg = '#FEE2E2'
+                                    urgencyText = 'Today'
+                                } else if (daysUntil === 1) {
+                                    urgencyColor = '#F59E0B'
+                                    urgencyBg = '#FEF3C7'
+                                    urgencyText = 'Tomorrow'
+                                } else if (daysUntil <= 7) {
+                                    urgencyColor = '#ba509eff'
+                                    urgencyBg = '#F3E8FF'
+                                }
+                                
+                                return (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.widgetItem,
+                                            index === (pendingTasks?.data?.length || 0) - 1 && styles.widgetItemLast
+                                        ]}
+                                        onPress={() => router.push(`/(verticals)/travel-agent/clients/${task.client_id}`)}
+                                    >
+                                        <View style={styles.widgetItemIcon}>
+                                            <Ionicons name="checkbox" size={16} color="#ba509eff" />
+                                        </View>
+                                        <View style={styles.widgetItemContent}>
+                                            <Text style={styles.widgetItemTitle}>{task.title}</Text>
+                                            <Text style={styles.widgetItemSubtitle}>{task.full_name}</Text>
+                                        </View>
+                                        <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg }]}>
+                                            <Text style={[styles.urgencyBadgeText, { color: urgencyColor }]}>
+                                                {urgencyText}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )
+                            })}
                             {(!pendingTasks?.data || pendingTasks.data.length === 0) && (
                                 <View style={styles.widgetEmpty}>
+                                    <Ionicons name="checkbox-outline" size={32} color="#D1D5DB" />
                                     <Text style={styles.widgetEmptyText}>No pending tasks</Text>
                                 </View>
                             )}
-                        </View>
+                        </ScrollView>
                     </View>
 
                 </View>
@@ -373,66 +523,6 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         borderWidth: 2,
         borderColor: '#fff',
-    },
-    heroCard: {
-        marginHorizontal: 24,
-        borderRadius: 24,
-        padding: 24,
-        marginBottom: 32,
-        shadowColor: '#4F46E5',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    heroContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-    },
-    heroLabel: {
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 4,
-    },
-    heroNumber: {
-        color: '#fff',
-        fontSize: 36,
-        fontWeight: '800',
-    },
-    heroIconContainer: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        padding: 12,
-        borderRadius: 16,
-    },
-    heroStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 16,
-        padding: 16,
-    },
-    heroStatItem: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    heroStatNumber: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    heroStatLabel: {
-        color: 'rgba(255,255,255,0.7)',
-        fontSize: 12,
-        marginTop: 2,
-    },
-    divider: {
-        width: 1,
-        height: 24,
-        backgroundColor: 'rgba(255,255,255,0.2)',
     },
     sectionTitle: {
         fontSize: 20,
@@ -643,6 +733,50 @@ const styles = StyleSheet.create({
     widgetEmptyText: {
         fontSize: 14,
         color: '#9CA3AF',
+        marginTop: 8,
+    },
+    leadStatusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    leadStatusText: {
+        fontSize: 10,
+        fontWeight: '600',
+        textTransform: 'capitalize',
+    },
+    widgetScrollContent: {
+        maxHeight: 350,
+        paddingHorizontal: 16,
+        paddingTop: 8,
+    },
+    countBadge: {
+        backgroundColor: 'rgba(255,255,255,0.25)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        minWidth: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    countBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    urgencyBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        minWidth: 60,
+        alignItems: 'center',
+    },
+    urgencyBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    widgetItemLast: {
+        borderBottomWidth: 0,
     },
 })
 

@@ -682,7 +682,7 @@ export async function getPendingTasks(limit: number = 10): Promise<ApiResponse<P
     endDate.setDate(endDate.getDate() + 30)
 
     const { data, error } = await supabase
-      .from('pending_tasks')
+      .from('pending_tasks_view')
       .select('*')
       .gte('due_date', today.toISOString())
       .lte('due_date', endDate.toISOString())

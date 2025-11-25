@@ -50,11 +50,8 @@ export default function FreelancerClientsList() {
 
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
-      case 'new': return '#3B82F6'
-      case 'in_process': return '#F59E0B'
-      case 'documents_pending': return '#EF4444'
-      case 'submitted': return '#8B5CF6'
-      case 'approved': return '#10B981'
+      case 'pending': return '#6B7280'
+      case 'in_progress': return '#F59E0B'
       case 'rejected': return '#DC2626'
       case 'completed': return '#059669'
       default: return '#6B7280'
