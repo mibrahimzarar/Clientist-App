@@ -308,24 +308,11 @@ export default function TravelAgentClientDetail() {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(verticals)/travel-agent/clients/${id}/reminders`)}
-          >
-            <LinearGradient
-              colors={['#EF4444', '#DC2626']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="alarm" size={28} color="#fff" />
-              <Text style={styles.actionText}>Reminders</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+
 
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push(`/(verticals)/travel-agent/clients/${id}/payments`)}
+            onPress={() => router.push(`/(verticals)/travel-agent/documents?clientId=${id}&type=payment_receipt`)}
           >
             <LinearGradient
               colors={['#10B981', '#059669']}

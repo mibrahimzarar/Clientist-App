@@ -128,30 +128,30 @@ export function CalendarWidget() {
                 {rowDays.map((day, index) => {
                     const dayNum = day.date.getDate()
                     const dayName = day.date.toLocaleDateString('en-US', { weekday: 'short' })
-                    
+
                     // Determine border color based on what's scheduled
                     let borderColor = '#E5E7EB' // default
                     let borderColors: [string, string] = ['#E5E7EB', '#E5E7EB']
                     let hasMultiple = false
-                    
+
                     if (day.hasTrip && day.hasTask && day.hasLead) {
-                        borderColors = ['#10B981', '#6366F1'] // Green to Indigo
+                        borderColors = ['#10B981', '#F59E0B'] // Green to Orange
                         hasMultiple = true
                     } else if (day.hasTrip && day.hasTask) {
                         borderColors = ['#10B981', '#ba509eff'] // Green to Purple
                         hasMultiple = true
                     } else if (day.hasTrip && day.hasLead) {
-                        borderColors = ['#10B981', '#6366F1'] // Green to Indigo
+                        borderColors = ['#10B981', '#F59E0B'] // Green to Orange
                         hasMultiple = true
                     } else if (day.hasTask && day.hasLead) {
-                        borderColors = ['#ba509eff', '#6366F1'] // Purple to Indigo
+                        borderColors = ['#ba509eff', '#F59E0B'] // Purple to Orange
                         hasMultiple = true
                     } else if (day.hasTrip) {
                         borderColor = '#10B981' // Green for trip
                     } else if (day.hasTask) {
                         borderColor = '#ba509eff' // Purple for task
                     } else if (day.hasLead) {
-                        borderColor = '#6366F1' // Indigo for lead
+                        borderColor = '#F59E0B' // Orange for lead
                     }
 
                     return (
@@ -199,22 +199,22 @@ export function CalendarWidget() {
                                                         <Ionicons name="checkbox" size={7} color="#ba509eff" />
                                                     )}
                                                     {day.hasLead && (
-                                                        <Ionicons name="person-add" size={7} color="#6366F1" />
+                                                        <Ionicons name="person-add" size={7} color="#F59E0B" />
                                                     )}
                                                 </View>
                                             </View>
                                         </LinearGradient>
                                     ) : (
-                                        <View style={[styles.dayCard, 
-                                            (day.hasTrip || day.hasTask || day.hasLead) && {
-                                                borderColor: borderColor,
-                                                borderWidth: 2,
-                                                shadowColor: borderColor,
-                                                shadowOffset: { width: 0, height: 0 },
-                                                shadowOpacity: 0.4,
-                                                shadowRadius: 4,
-                                                elevation: 3,
-                                            }
+                                        <View style={[styles.dayCard,
+                                        (day.hasTrip || day.hasTask || day.hasLead) && {
+                                            borderColor: borderColor,
+                                            borderWidth: 2,
+                                            shadowColor: borderColor,
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: 0.4,
+                                            shadowRadius: 4,
+                                            elevation: 3,
+                                        }
                                         ]}>
                                             <Text style={styles.dayName}>{dayName}</Text>
                                             <Text style={styles.dayNumber}>{dayNum}</Text>
@@ -227,7 +227,7 @@ export function CalendarWidget() {
                                                         <Ionicons name="checkbox" size={7} color="#ba509eff" />
                                                     )}
                                                     {day.hasLead && (
-                                                        <Ionicons name="person-add" size={7} color="#6366F1" />
+                                                        <Ionicons name="person-add" size={7} color="#F59E0B" />
                                                     )}
                                                 </View>
                                             )}
@@ -292,7 +292,7 @@ export function CalendarWidget() {
                         <Text style={styles.legendText}>Task</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <Ionicons name="person-add" size={12} color="#6366F1" />
+                        <Ionicons name="person-add" size={12} color="#F59E0B" />
                         <Text style={styles.legendText}>Lead</Text>
                     </View>
                 </View>

@@ -83,7 +83,7 @@ export default function LeadsScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.header}>
+      <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -99,37 +99,24 @@ export default function LeadsScreen() {
             <Ionicons name="add" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-
-        {/* Stats Cards */}
-        {stats && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.statsScroll}
-            contentContainerStyle={styles.statsContainer}
-          >
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{stats.total_leads}</Text>
-              <Text style={styles.statLabel}>Total Leads</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{stats.potential_leads}</Text>
-              <Text style={styles.statLabel}>Potential</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{stats.interested_leads}</Text>
-              <Text style={styles.statLabel}>Interested</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{stats.todays_followups}</Text>
-              <Text style={styles.statLabel}>Today's Follow-ups</Text>
-            </View>
-            <View style={[styles.statCard, stats.overdue_followups > 0 && styles.statCardAlert]}>
-              <Text style={styles.statNumber}>{stats.overdue_followups}</Text>
-              <Text style={styles.statLabel}>Overdue</Text>
-            </View>
-          </ScrollView>
-        )}
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color="#6B7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search leads..."
+              placeholderTextColor="#9CA3AF"
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+            {searchTerm.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchTerm('')}>
+                <Ionicons name="close-circle" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -138,7 +125,7 @@ export default function LeadsScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <Ionicons name="calendar-outline" size={20} color="#6366F1" />
+                <Ionicons name="calendar-outline" size={20} color="#F59E0B" />
                 <Text style={styles.sectionTitle}>Today's Follow-ups</Text>
               </View>
               <View style={styles.badge}>
@@ -155,29 +142,12 @@ export default function LeadsScreen() {
                   style={styles.followUpButton}
                   onPress={() => router.push(`/(verticals)/travel-agent/leads/${followUp.id}` as any)}
                 >
-                  <Ionicons name="chevron-forward" size={20} color="#6366F1" />
+                  <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
-
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#9CA3AF" />
-          <TextInput
-            style={styles.searchInput}
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            placeholder="Search leads..."
-            placeholderTextColor="#9CA3AF"
-          />
-          {searchTerm !== '' && (
-            <TouchableOpacity onPress={() => setSearchTerm('')}>
-              <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          )}
-        </View>
 
         {/* Status Filter */}
         <ScrollView
@@ -210,7 +180,7 @@ export default function LeadsScreen() {
         <View style={styles.leadsSection}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#6366F1" />
+              <ActivityIndicator size="large" color="#F59E0B" />
             </View>
           ) : leads.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -351,7 +321,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   badge: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#FEF3C7',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -359,7 +329,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#F59E0B',
   },
   followUpCard: {
     flexDirection: 'row',
@@ -391,29 +361,27 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#FEF3C7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
+    gap: 12,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderRadius: 12,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    height: 48,
+    fontSize: 16,
     color: '#111827',
   },
   filterScroll: {
@@ -435,8 +403,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   filterChipActive: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
   filterDot: {
     width: 8,
@@ -449,7 +417,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
-    color: '#6366F1',
+    color: '#F59E0B',
     fontWeight: '600',
   },
   leadsSection: {
@@ -479,7 +447,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#6366F1',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   RefreshControl,
+  Image,
 } from 'react-native'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
@@ -95,6 +96,22 @@ export default function TravelAgentClientsList() {
 
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
+          {/* Profile Picture */}
+          <View style={styles.profilePictureContainer}>
+            {item.profile_picture_url ? (
+              <Image
+                source={{ uri: item.profile_picture_url }}
+                style={styles.profilePicture}
+              />
+            ) : (
+              <View style={styles.profilePlaceholder}>
+                <Text style={styles.profileInitials}>
+                  {item.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'NA'}
+                </Text>
+              </View>
+            )}
+          </View>
+
           <View style={styles.clientInfo}>
             <Text style={styles.clientName}>{item.full_name}</Text>
             <View style={styles.contactRow}>
@@ -416,15 +433,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 16,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   statusBar: {
     height: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   cardContent: {
     padding: 16,
@@ -433,6 +453,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+    alignItems: 'center',
+  },
+  profilePictureContainer: {
+    marginRight: 12,
+  },
+  profilePicture: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  profilePlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  profileInitials: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4B5563',
   },
   clientInfo: {
     flex: 1,

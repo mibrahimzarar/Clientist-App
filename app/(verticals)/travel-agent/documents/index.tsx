@@ -11,7 +11,7 @@ import {
     Linking,
     Modal,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { getAllDocuments, deleteClientDocument } from '../../../../src/api/documents'
@@ -32,6 +32,7 @@ export default function DocumentsPage() {
     const [filteredDocuments, setFilteredDocuments] = useState<DocumentWithClient[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const { clientId, type } = useLocalSearchParams<{ clientId: string, type: string }>()
 
     // Add Document State
     const [showClientModal, setShowClientModal] = useState(false)
@@ -46,7 +47,7 @@ export default function DocumentsPage() {
 
     useEffect(() => {
         filterDocuments()
-    }, [documents, searchQuery])
+    }, [documents, searchQuery, clientId, type])
 
     const fetchDocuments = async () => {
         try {
@@ -81,6 +82,17 @@ export default function DocumentsPage() {
 
     const filterDocuments = () => {
         let filtered = documents
+
+        // Filter by Client ID if present in params
+        if (clientId) {
+            filtered = filtered.filter(doc => doc.client?.id === clientId)
+        }
+
+        // Filter by Type if present in params
+        if (type) {
+            filtered = filtered.filter(doc => doc.file_type === type || doc.type === type)
+        }
+
         if (searchQuery) {
             filtered = filtered.filter(doc =>
                 doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,8 +174,15 @@ export default function DocumentsPage() {
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle}>Documents</Text>
-                        <Text style={styles.headerSubtitle}>{filteredDocuments.length} files</Text>
+                        <Text style={styles.headerTitle}>
+                            {type === 'payment_receipt' ? 'Payment Receipts' : 'Documents'}
+                        </Text>
+                        <Text style={styles.headerSubtitle}>
+                            {clientId && filteredDocuments.length > 0 && filteredDocuments[0].client
+                                ? `${filteredDocuments[0].client.full_name} • `
+                                : ''}
+                            {filteredDocuments.length} files
+                        </Text>
                     </View>
                     <TouchableOpacity
                         style={styles.addButton}
@@ -384,11 +403,13 @@ const styles = StyleSheet.create({
         padding: 12,
         marginBottom: 12,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8,
     },
     docIconContainer: {
         width: 48,

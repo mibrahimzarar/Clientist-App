@@ -71,7 +71,7 @@ export default function LeadCard({ lead, onPress, onConvert }: LeadCardProps) {
         end={{ x: 1, y: 1 }}
         style={styles.statusBar}
       />
-      
+
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -121,7 +121,7 @@ export default function LeadCard({ lead, onPress, onConvert }: LeadCardProps) {
                 {lead.lead_status.replace('_', ' ')}
               </Text>
             </View>
-            
+
             {followUpInfo && (
               <View style={[styles.followUpBadge, { backgroundColor: `${followUpInfo.color}20` }]}>
                 <Ionicons name="calendar" size={12} color={followUpInfo.color} />
@@ -155,15 +155,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 12,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   statusBar: {
     height: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   content: {
     padding: 16,

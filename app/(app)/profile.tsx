@@ -8,6 +8,9 @@ import {
   TextInput,
   Image,
   Alert,
+  Switch,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import { BouncingBallsLoader } from '../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
@@ -15,8 +18,10 @@ import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '../../src/lib/supabase'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { NotificationService, NotificationPreferences } from '../../src/services/NotificationService'
 
 export default function Profile() {
   const insets = useSafeAreaInsets()
@@ -26,6 +31,8 @@ export default function Profile() {
   const [email, setEmail] = useState<string>('')
   const [companyName, setCompanyName] = useState<string>('')
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({ trips: true, tasks: true, leads: true })
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -56,6 +63,11 @@ export default function Profile() {
         setCompanyName(data.company_name || '')
         setCompanyLogo(data.company_logo || null)
       }
+
+      // Load notification preferences
+      const prefs = await NotificationService.getPreferences()
+      setNotificationPrefs(prefs)
+
     } catch (error) {
       console.error('Error:', error)
     } finally {
@@ -132,29 +144,7 @@ export default function Profile() {
     }
   }
 
-  const handleExportData = async () => {
-    if (!userId) {
-      Alert.alert('Error', 'User not authenticated')
-      return
-    }
 
-    try {
-      const csvContent = `Client Name,Email,Phone,Status,Package Type,Created Date
-Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
-
-      const base: string = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory || ''
-      const path = base + 'clients_export.csv'
-      await FileSystem.writeAsStringAsync(path, csvContent)
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(path)
-      } else {
-        Alert.alert('Success', 'Data exported successfully')
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to export data')
-    }
-  }
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -179,7 +169,7 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
       icon: 'notifications-outline',
       title: 'Notifications',
       description: 'Manage push notifications',
-      onPress: () => Alert.alert('Coming Soon', 'Notifications settings will be available soon'),
+      onPress: () => setShowNotificationsModal(true),
     },
     {
       icon: 'swap-horizontal-outline',
@@ -187,12 +177,7 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
       description: 'Switch to a different business vertical',
       onPress: () => router.push('/select-vertical'),
     },
-    {
-      icon: 'download-outline',
-      title: 'Export Data',
-      description: 'Export client data as CSV',
-      onPress: handleExportData,
-    },
+
     {
       icon: 'log-out-outline',
       title: 'Sign Out',
@@ -212,47 +197,59 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#8B5CF6', '#7C3AED']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
-        <View style={{ width: 24 }} />
-      </View>
+        <View style={{ width: 40 }} />
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content}>
 
         {/* Profile Card */}
+        {/* Profile Card */}
         <View style={styles.profileCard}>
-          <TouchableOpacity onPress={pickImage} style={styles.logoContainer}>
-            {companyLogo ? (
-              <Image source={{ uri: companyLogo }} style={styles.logo} />
-            ) : (
-              <View style={styles.logoPlaceholder}>
-                <Ionicons name="business" size={32} color="#9CA3AF" />
+          <View style={styles.avatarSection}>
+            <TouchableOpacity onPress={pickImage} style={styles.logoContainer}>
+              {companyLogo ? (
+                <Image source={{ uri: companyLogo }} style={styles.logo} />
+              ) : (
+                <LinearGradient
+                  colors={['#F3F4F6', '#E5E7EB']}
+                  style={styles.logoPlaceholder}
+                >
+                  <Ionicons name="business" size={40} color="#9CA3AF" />
+                </LinearGradient>
+              )}
+              {saving && (
+                <View style={styles.uploadingOverlay}>
+                  <BouncingBallsLoader color="#fff" size={8} />
+                </View>
+              )}
+              <View style={styles.editIcon}>
+                <Ionicons name="camera" size={14} color="#fff" />
               </View>
-            )}
-            {saving && (
-              <View style={styles.uploadingOverlay}>
-                <BouncingBallsLoader color="#fff" size={8} />
-              </View>
-            )}
-            <View style={styles.editIcon}>
-              <Ionicons name="camera" size={16} color="#fff" />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.profileInfo}>
+            <Text style={styles.label}>Company Name</Text>
             <TextInput
               style={styles.companyNameInput}
               value={companyName}
               onChangeText={setCompanyName}
               onBlur={() => saveProfile()}
-              placeholder="Company Name"
+              placeholder="Enter Company Name"
               placeholderTextColor="#9CA3AF"
             />
-            <View style={styles.emailContainer}>
-              <Ionicons name="mail-outline" size={16} color="#6B7280" />
+            <View style={styles.emailBadge}>
+              <Ionicons name="mail" size={14} color="#6B7280" />
               <Text style={styles.emailText}>{email}</Text>
             </View>
           </View>
@@ -295,6 +292,98 @@ Sample Client,sample@example.com,+1234567890,active,service,2024-01-15`
         </View>
 
       </ScrollView>
+
+      {/* Notifications Modal */}
+      <Modal
+        visible={showNotificationsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNotificationsModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowNotificationsModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Notification Settings</Text>
+                  <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
+                    <Ionicons name="close" size={24} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.modalSubtitle}>
+                  Receive reminders for upcoming events. Notifications are sent 1 day before and on the day of the event.
+                </Text>
+
+                <View style={styles.togglesContainer}>
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleInfo}>
+                      <View style={[styles.toggleIcon, { backgroundColor: '#ECFDF5' }]}>
+                        <Ionicons name="airplane" size={20} color="#10B981" />
+                      </View>
+                      <View>
+                        <Text style={styles.toggleLabel}>Upcoming Trips</Text>
+                        <Text style={styles.toggleDescription}>Reminders for client travel</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={notificationPrefs.trips}
+                      onValueChange={(val) => {
+                        const newPrefs = { ...notificationPrefs, trips: val }
+                        setNotificationPrefs(newPrefs)
+                        NotificationService.savePreferences(newPrefs)
+                      }}
+                      trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleInfo}>
+                      <View style={[styles.toggleIcon, { backgroundColor: '#FDF2F8' }]}>
+                        <Ionicons name="checkbox" size={20} color="#BE185D" />
+                      </View>
+                      <View>
+                        <Text style={styles.toggleLabel}>Pending Tasks</Text>
+                        <Text style={styles.toggleDescription}>Reminders for due tasks</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={notificationPrefs.tasks}
+                      onValueChange={(val) => {
+                        const newPrefs = { ...notificationPrefs, tasks: val }
+                        setNotificationPrefs(newPrefs)
+                        NotificationService.savePreferences(newPrefs)
+                      }}
+                      trackColor={{ false: '#E5E7EB', true: '#BE185D' }}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={styles.toggleInfo}>
+                      <View style={[styles.toggleIcon, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="person-add" size={20} color="#D97706" />
+                      </View>
+                      <View>
+                        <Text style={styles.toggleLabel}>Lead Follow-ups</Text>
+                        <Text style={styles.toggleDescription}>Reminders to contact leads</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={notificationPrefs.leads}
+                      onValueChange={(val) => {
+                        const newPrefs = { ...notificationPrefs, leads: val }
+                        setNotificationPrefs(newPrefs)
+                        NotificationService.savePreferences(newPrefs)
+                      }}
+                      trackColor={{ false: '#E5E7EB', true: '#D97706' }}
+                    />
+                  </View>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   )
 }
@@ -313,60 +402,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingTop: 60,
+    paddingBottom: 24,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
   },
   content: {
-    padding: 24,
+    padding: 20,
   },
   profileCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  avatarSection: {
+    marginBottom: 20,
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F3F4F6',
-    marginBottom: 16,
-    position: 'relative',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    padding: 4,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
   },
   logo: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 55,
   },
   logoPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 55,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
   },
   uploadingOverlay: {
     position: 'absolute',
@@ -375,7 +472,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 50,
+    borderRadius: 55,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -383,7 +480,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#8B5CF6',
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -396,64 +493,72 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
   companyNameInput: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 4,
     minWidth: 200,
   },
-  emailContainer: {
+  emailBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
   },
   emailText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#4B5563',
+    fontWeight: '500',
   },
   menuSection: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   menuItemFirst: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   menuItemLast: {
     borderBottomWidth: 0,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   menuIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   menuIconDestructive: {
     backgroundColor: '#FEF2F2',
@@ -465,13 +570,77 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   menuTitleDestructive: {
     color: '#EF4444',
   },
   menuDescription: {
     fontSize: 13,
+    color: '#6B7280',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    width: '100%',
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  togglesContainer: {
+    gap: 20,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  toggleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toggleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  toggleDescription: {
+    fontSize: 12,
     color: '#6B7280',
   },
 })

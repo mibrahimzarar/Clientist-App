@@ -72,7 +72,7 @@ export default function TripsPage() {
           style={styles.tripHeader}
         >
           <View style={styles.headerTopRow}>
-            <View style={[styles.typeBadge, { backgroundColor: isReturn ? 'rgba(16,185,129,0.2)' : 'rgba(37,99,235,0.2)', borderColor: isReturn ? '#d1e8e0ff' : '#afbcd8ff' }]}> 
+            <View style={[styles.typeBadge, { backgroundColor: isReturn ? 'rgba(16,185,129,0.2)' : 'rgba(37,99,235,0.2)', borderColor: isReturn ? '#d1e8e0ff' : '#afbcd8ff' }]}>
               <Ionicons name={isReturn ? 'swap-vertical' : 'arrow-forward'} size={14} color={isReturn ? '#d1e8e0ff' : '#afbcd8ff'} />
               <Text style={[styles.typeBadgeText, { color: isReturn ? '#d1e8e0ff' : '#afbcd8ff' }]}>{isReturn ? 'Round Trip' : 'One Way'}</Text>
             </View>
@@ -99,7 +99,7 @@ export default function TripsPage() {
 
           {isReturn && (
             <View>
-              <View style={[styles.routeContainer, { marginBottom: 8 }]}> 
+              <View style={[styles.routeContainer, { marginBottom: 8 }]}>
                 <View style={styles.cityContainer}>
                   <Text style={styles.cityCode}>{item.departure_city.substring(0, 3).toUpperCase()}</Text>
                   <Text style={styles.cityName}>{item.departure_city}</Text>
@@ -114,7 +114,7 @@ export default function TripsPage() {
                   <Text style={styles.cityName}>{item.destination_city}</Text>
                 </View>
               </View>
-              <View style={styles.routeContainer}> 
+              <View style={styles.routeContainer}>
                 <View style={styles.cityContainer}>
                   <Text style={styles.cityCode}>{(item.return_departure_city || item.destination_city).substring(0, 3).toUpperCase()}</Text>
                   <Text style={styles.cityName}>{item.return_departure_city || item.destination_city}</Text>
@@ -158,7 +158,7 @@ export default function TripsPage() {
           )}
           {isReturn && (
             <View>
-              <View style={[styles.dateRow, { marginBottom: 8 }]}> 
+              <View style={[styles.dateRow, { marginBottom: 8 }]}>
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>Outbound</Text>
                   <Text style={styles.dateValue}>
@@ -173,7 +173,7 @@ export default function TripsPage() {
                   </Text>
                 </View>
               </View>
-              <View style={styles.dateRow}> 
+              <View style={styles.dateRow}>
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>Return</Text>
                   <Text style={styles.dateValue}>
@@ -472,15 +472,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 16,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   tripHeader: {
     padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   headerTopRow: {
     flexDirection: 'row',

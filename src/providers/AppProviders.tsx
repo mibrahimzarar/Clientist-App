@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { initRealtime } from '../lib/realtime'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeProvider } from '../context/ThemeContext'
+import { NotificationManager } from '../components/notifications/NotificationManager'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false, shouldShowList: false, shouldShowBanner: true })
@@ -22,7 +23,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
         try {
           const token = await Notifications.getExpoPushTokenAsync()
           await supabase.from('profiles').upsert({ id: userId, expo_push_token: (token as any)?.data })
-        } catch {}
+        } catch { }
         const lastRun = await AsyncStorage.getItem('clientist_last_stale_check')
         const now = Date.now()
         if (!lastRun || now - Number(lastRun) > 24 * 60 * 60 * 1000) {
@@ -36,7 +37,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
               await Notifications.scheduleNotificationAsync({ content: { title: `Follow up: ${c.name}` }, trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2 } })
             }
             await AsyncStorage.setItem('clientist_last_stale_check', String(Date.now()))
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -44,7 +45,10 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   }, [])
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <NotificationManager />
+        {children}
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
