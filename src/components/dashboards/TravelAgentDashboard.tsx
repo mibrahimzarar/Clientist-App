@@ -30,7 +30,7 @@ export default function TravelAgentDashboard() {
 
     // Prepare notifications for the widget
     const todaysNotifications = []
-    
+
     // Add trip notifications
     if (upcomingTravels?.data && upcomingTravels.data.length > 0) {
         const todaysTrips = upcomingTravels.data.filter(travel => {
@@ -49,7 +49,7 @@ export default function TravelAgentDashboard() {
             })
         }
     }
-    
+
     // Add task notifications
     if (pendingTasks?.data && pendingTasks.data.length > 0) {
         const todaysTasks = pendingTasks.data.filter(task => {
@@ -68,7 +68,7 @@ export default function TravelAgentDashboard() {
             })
         }
     }
-    
+
     // Add lead follow-up notifications
     if (todaysFollowUps.length > 0) {
         todaysNotifications.push({
@@ -283,7 +283,9 @@ export default function TravelAgentDashboard() {
                                 style={styles.widgetHeader}
                             >
                                 <View style={styles.widgetHeaderContent}>
-                                    <Ionicons name="person-add" size={20} color="#fff" />
+                                    <View style={styles.widgetIconContainer}>
+                                        <Ionicons name="person-add" size={20} color="#4F46E5" />
+                                    </View>
                                     <Text style={styles.widgetTitle}>Today's Lead Follow-ups</Text>
                                 </View>
                                 <TouchableOpacity onPress={() => router.push('/(verticals)/travel-agent/leads')}>
@@ -330,15 +332,20 @@ export default function TravelAgentDashboard() {
                             style={styles.widgetHeader}
                         >
                             <View style={styles.widgetHeaderContent}>
-                                <Ionicons name="airplane" size={20} color="#fff" />
-                                <Text style={styles.widgetTitle}>Upcoming Travels (30 Days)</Text>
+                                <View style={styles.widgetIconContainer}>
+                                    <Ionicons name="airplane" size={20} color="#059669" />
+                                </View>
+                                <View>
+                                    <Text style={styles.widgetTitle}>Upcoming Travels</Text>
+                                    <Text style={styles.widgetSubtitle}>Next 30 Days</Text>
+                                </View>
                             </View>
                             <View style={styles.countBadge}>
                                 <Text style={styles.countBadgeText}>{upcomingTravels?.data?.length || 0}</Text>
                             </View>
                         </LinearGradient>
 
-                        <ScrollView 
+                        <ScrollView
                             style={styles.widgetScrollContent}
                             showsVerticalScrollIndicator={false}
                         >
@@ -346,12 +353,12 @@ export default function TravelAgentDashboard() {
                                 const departureDate = new Date(travel.departure_date || Date.now())
                                 const today = new Date()
                                 const daysUntil = Math.ceil((departureDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                                
+
                                 let urgencyColor = '#6B7280'
                                 let urgencyBg = '#F3F4F6'
                                 let urgencyText = `${daysUntil}d`
-                                
-                                if (daysUntil === 0) {
+
+                                if (daysUntil <= 0) {
                                     urgencyColor = '#EF4444'
                                     urgencyBg = '#FEE2E2'
                                     urgencyText = 'Today'
@@ -363,7 +370,7 @@ export default function TravelAgentDashboard() {
                                     urgencyColor = '#10B981'
                                     urgencyBg = '#D1FAE5'
                                 }
-                                
+
                                 return (
                                     <TouchableOpacity
                                         key={index}
@@ -373,13 +380,16 @@ export default function TravelAgentDashboard() {
                                         ]}
                                         onPress={() => router.push(`/(verticals)/travel-agent/clients/${travel.client_id}`)}
                                     >
-                                        <View style={styles.widgetItemIcon}>
+                                        <View style={[styles.widgetItemIcon, { backgroundColor: '#ECFDF5' }]}>
                                             <Ionicons name="airplane" size={16} color="#10B981" />
                                         </View>
                                         <View style={styles.widgetItemContent}>
                                             <Text style={styles.widgetItemTitle}>{travel.full_name}</Text>
                                             <Text style={styles.widgetItemSubtitle}>
-                                                {travel.airline} • {travel.pnr_number}
+                                                {travel.departure_city} → {travel.destination_city || 'Destination'}
+                                            </Text>
+                                            <Text style={styles.widgetItemDate}>
+                                                {new Date(travel.departure_date || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </Text>
                                         </View>
                                         <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg }]}>
@@ -408,15 +418,20 @@ export default function TravelAgentDashboard() {
                             style={styles.widgetHeader}
                         >
                             <View style={styles.widgetHeaderContent}>
-                                <Ionicons name="checkbox" size={20} color="#fff" />
-                                <Text style={styles.widgetTitle}>Pending Tasks (30 Days)</Text>
+                                <View style={styles.widgetIconContainer}>
+                                    <Ionicons name="checkbox" size={20} color="#ae0e83ff" />
+                                </View>
+                                <View>
+                                    <Text style={styles.widgetTitle}>Pending Tasks</Text>
+                                    <Text style={styles.widgetSubtitle}>Next 30 Days</Text>
+                                </View>
                             </View>
                             <View style={styles.countBadge}>
                                 <Text style={styles.countBadgeText}>{pendingTasks?.data?.length || 0}</Text>
                             </View>
                         </LinearGradient>
 
-                        <ScrollView 
+                        <ScrollView
                             style={styles.widgetScrollContent}
                             showsVerticalScrollIndicator={false}
                         >
@@ -424,24 +439,24 @@ export default function TravelAgentDashboard() {
                                 const dueDate = new Date(task.due_date || Date.now())
                                 const today = new Date()
                                 const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                                
+
                                 let urgencyColor = '#6B7280'
                                 let urgencyBg = '#F3F4F6'
                                 let urgencyText = `${daysUntil}d`
-                                
-                                if (daysUntil === 0) {
+
+                                if (daysUntil <= 0) {
                                     urgencyColor = '#EF4444'
                                     urgencyBg = '#FEE2E2'
-                                    urgencyText = 'Today'
+                                    urgencyText = 'Due'
                                 } else if (daysUntil === 1) {
                                     urgencyColor = '#F59E0B'
                                     urgencyBg = '#FEF3C7'
-                                    urgencyText = 'Tomorrow'
+                                    urgencyText = 'Tmrw'
                                 } else if (daysUntil <= 7) {
                                     urgencyColor = '#ba509eff'
                                     urgencyBg = '#F3E8FF'
                                 }
-                                
+
                                 return (
                                     <TouchableOpacity
                                         key={index}
@@ -451,12 +466,15 @@ export default function TravelAgentDashboard() {
                                         ]}
                                         onPress={() => router.push(`/(verticals)/travel-agent/clients/${task.client_id}`)}
                                     >
-                                        <View style={styles.widgetItemIcon}>
+                                        <View style={[styles.widgetItemIcon, { backgroundColor: '#FDF2F8' }]}>
                                             <Ionicons name="checkbox" size={16} color="#ba509eff" />
                                         </View>
                                         <View style={styles.widgetItemContent}>
                                             <Text style={styles.widgetItemTitle}>{task.title}</Text>
                                             <Text style={styles.widgetItemSubtitle}>{task.full_name}</Text>
+                                            <Text style={styles.widgetItemDate}>
+                                                {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </Text>
                                         </View>
                                         <View style={[styles.urgencyBadge, { backgroundColor: urgencyBg }]}>
                                             <Text style={[styles.urgencyBadgeText, { color: urgencyColor }]}>
@@ -664,62 +682,85 @@ const styles = StyleSheet.create({
     },
     widget: {
         backgroundColor: '#fff',
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)',
     },
     widgetHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
+        padding: 20,
     },
     widgetHeaderContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 12,
+    },
+    widgetIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     widgetTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '700',
         color: '#fff',
+        letterSpacing: -0.5,
+    },
+    widgetSubtitle: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '500',
     },
     widgetContent: {
-        padding: 16,
+        padding: 20,
         paddingTop: 8,
     },
     widgetItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
     widgetItemIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: '#DCFCE7',
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        backgroundColor: '#F3F4F6',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: 16,
     },
     widgetItemContent: {
         flex: 1,
+        justifyContent: 'center',
     },
     widgetItemTitle: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
         color: '#111827',
         marginBottom: 2,
     },
     widgetItemSubtitle: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#6B7280',
+        marginBottom: 2,
     },
     widgetItemDate: {
         fontSize: 12,
@@ -727,52 +768,55 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
     },
     widgetEmpty: {
-        paddingVertical: 24,
+        paddingVertical: 32,
         alignItems: 'center',
     },
     widgetEmptyText: {
         fontSize: 14,
         color: '#9CA3AF',
-        marginTop: 8,
+        marginTop: 12,
+        fontWeight: '500',
     },
     leadStatusBadge: {
-        paddingHorizontal: 8,
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 6,
+        borderRadius: 8,
     },
     leadStatusText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '600',
         textTransform: 'capitalize',
     },
     widgetScrollContent: {
-        maxHeight: 350,
-        paddingHorizontal: 16,
-        paddingTop: 8,
+        maxHeight: 380,
+        paddingHorizontal: 20,
+        paddingTop: 4,
     },
     countBadge: {
         backgroundColor: 'rgba(255,255,255,0.25)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 12,
-        minWidth: 28,
+        minWidth: 32,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     countBadgeText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '700',
         color: '#fff',
     },
     urgencyBadge: {
         paddingHorizontal: 10,
         paddingVertical: 6,
-        borderRadius: 8,
-        minWidth: 60,
+        borderRadius: 10,
+        minWidth: 64,
         alignItems: 'center',
     },
     urgencyBadgeText: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: '700',
     },
     widgetItemLast: {

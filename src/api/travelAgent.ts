@@ -654,16 +654,52 @@ export async function getUpcomingTravels(limit: number = 10): Promise<ApiRespons
     endDate.setDate(endDate.getDate() + 30)
 
     const { data, error } = await supabase
-      .from('upcoming_travels')
-      .select('*')
+      .from('travel_trips')
+      .select(`
+        *,
+        client:clients(id, full_name, phone_number, email, status)
+      `)
       .gte('departure_date', today.toISOString())
       .lte('departure_date', endDate.toISOString())
+      .order('departure_date', { ascending: true })
       .limit(limit)
 
     if (error) throw error
 
+    const travels: UpcomingTravel[] = (data || []).map((trip: any) => {
+      const departureDate = new Date(trip.departure_date)
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+
+      const diffTime = departureDate.getTime() - now.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      let urgency: 'today' | 'tomorrow' | 'this_week' | 'this_month' | 'later' = 'later'
+
+      if (diffDays <= 0) urgency = 'today'
+      else if (diffDays === 1) urgency = 'tomorrow'
+      else if (diffDays <= 7) urgency = 'this_week'
+      else if (diffDays <= 30) urgency = 'this_month'
+
+      return {
+        client_id: trip.client_id,
+        full_name: trip.client?.full_name || 'Unknown Client',
+        phone_number: trip.client?.phone_number || '',
+        email: trip.client?.email,
+        client_status: trip.client?.status || 'pending',
+        departure_date: trip.departure_date,
+        return_date: trip.return_date,
+        airline: trip.airline,
+        pnr_number: trip.pnr_number,
+        hotel_name: trip.hotel_name,
+        departure_city: trip.departure_city,
+        destination_city: trip.destination_city,
+        travel_urgency: urgency
+      }
+    })
+
     return {
-      data: data || [],
+      data: travels,
       success: true
     }
   } catch (error) {
@@ -682,16 +718,37 @@ export async function getPendingTasks(limit: number = 10): Promise<ApiResponse<P
     endDate.setDate(endDate.getDate() + 30)
 
     const { data, error } = await supabase
-      .from('pending_tasks_view')
-      .select('*')
+      .from('client_tasks')
+      .select(`
+        *,
+        client:clients(id, full_name, phone_number, email)
+      `)
+      .eq('status', 'pending')
       .gte('due_date', today.toISOString())
       .lte('due_date', endDate.toISOString())
+      .order('due_date', { ascending: true })
       .limit(limit)
 
     if (error) throw error
 
+    const tasks: PendingTask[] = (data || []).map((task: any) => ({
+      id: task.id,
+      client_id: task.client_id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority || 'medium',
+      due_date: task.due_date,
+      status: task.status,
+      is_reminder_enabled: task.is_reminder_enabled,
+      created_at: task.created_at,
+      created_by: task.created_by,
+      full_name: task.client?.full_name || 'Unknown Client',
+      phone_number: task.client?.phone_number || '',
+      email: task.client?.email
+    }))
+
     return {
-      data: data || [],
+      data: tasks,
       success: true
     }
   } catch (error) {

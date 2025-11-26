@@ -157,6 +157,8 @@ export type UpcomingTravel = {
   airline?: string
   pnr_number?: string
   hotel_name?: string
+  departure_city?: string
+  destination_city?: string
   travel_urgency: 'today' | 'tomorrow' | 'this_week' | 'this_month' | 'later'
 }
 
