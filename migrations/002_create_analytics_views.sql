@@ -92,8 +92,8 @@ BEGIN
     RETURN QUERY
     SELECT 
         COUNT(DISTINCT c.id)::BIGINT as total_clients,
-        COUNT(DISTINCT CASE WHEN c.status = 'new' THEN c.id END)::BIGINT as new_clients,
-        COUNT(DISTINCT CASE WHEN c.status = 'in_process' THEN c.id END)::BIGINT as in_process_clients,
+        COUNT(DISTINCT CASE WHEN c.status = 'pending' THEN c.id END)::BIGINT as new_clients,
+        COUNT(DISTINCT CASE WHEN c.status = 'in_progress' THEN c.id END)::BIGINT as in_process_clients,
         COUNT(DISTINCT CASE WHEN c.status = 'completed' THEN c.id END)::BIGINT as completed_clients,
         COUNT(DISTINCT CASE WHEN r.is_completed = FALSE AND r.due_date < CURRENT_TIMESTAMP + INTERVAL '24 hours' THEN r.id END)::BIGINT as urgent_tasks,
         COUNT(DISTINCT CASE WHEN ti.departure_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' THEN ti.id END)::BIGINT as upcoming_travels,

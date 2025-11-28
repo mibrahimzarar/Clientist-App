@@ -1,7 +1,7 @@
 // Travel Agent Management System Types
 
 // Enum types matching the database schema
-export type ClientStatus = 'pending' | 'in_progress' | 'rejected' | 'completed'
+export type ClientStatus = 'in_progress' | 'rejected' | 'completed'
 export type PackageType = 'umrah_package' | 'tourist_visa' | 'ticketing' | 'visit_visa'
 export type LeadSource = 'facebook' | 'referral' | 'walk_in' | 'whatsapp' | 'instagram' | 'website' | 'google' | 'other'
 export type LeadStatus = 'potential' | 'call_later' | 'interested' | 'not_interested' | 'converted'
@@ -35,6 +35,8 @@ export type TravelClient = {
   payments?: Payment[]
   client_files?: ClientFile[]
   follow_ups?: FollowUp[]
+  earnings?: ClientEarning[]
+  client_earnings?: ClientEarning[]
 }
 
 // Travel Information type
@@ -121,6 +123,19 @@ export type FollowUp = {
   follow_up_type?: string
   notes?: string
   status: string
+  created_at: string
+  updated_at: string
+}
+
+// Client Earnings type
+export type ClientEarning = {
+  id: string
+  client_id: string
+  amount: number
+  currency: string
+  description?: string
+  earned_date: string
+  notes?: string
   created_at: string
   updated_at: string
 }
@@ -248,6 +263,14 @@ export type PaymentFormData = {
   payment_method?: string
   reference_number?: string
   status?: string
+  notes?: string
+}
+
+export type EarningFormData = {
+  amount: number
+  currency?: string
+  description?: string
+  earned_date?: string
   notes?: string
 }
 

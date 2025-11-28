@@ -50,8 +50,7 @@ export default function ServiceProviderClientsList() {
 
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
-      case 'pending': return '#6B7280'
-      case 'in_progress': return '#F59E0B'
+      case 'in_progress': return '#667EEA'
       case 'rejected': return '#DC2626'
       case 'completed': return '#059669'
       default: return '#6B7280'

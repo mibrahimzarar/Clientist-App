@@ -40,7 +40,6 @@ const priorityOptions = [
 ]
 
 const statusOptions = [
-    { value: 'pending', label: 'Pending' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'completed', label: 'Completed' },
@@ -58,7 +57,7 @@ export default function EditClient() {
         country: '',
         package_type: 'umrah_package' as PackageType,
         lead_source: 'walk_in' as LeadSource,
-        status: 'pending' as ClientStatus,
+        status: 'in_progress' as ClientStatus,
         priority_tag: 'normal' as PriorityTag,
         notes: '',
     })

@@ -18,6 +18,7 @@ interface TopStatsWidgetProps {
   activeClients: number
   completedClients: number
   urgentTasks: number
+  leadsToFollow?: number
   notifications?: Notification[]
   onClientPress?: () => void
 }
@@ -27,6 +28,7 @@ export default function TopStatsWidget({
   activeClients,
   completedClients,
   urgentTasks,
+  leadsToFollow = 0,
   notifications = [],
   onClientPress
 }: TopStatsWidgetProps) {
@@ -69,7 +71,7 @@ export default function TopStatsWidget({
                 <Ionicons name="people" size={32} color="#fff" />
               </View>
               <View style={styles.mainStatsContent}>
-                <Text style={styles.mainLabel}>Total Clients</Text>
+                <Text style={styles.mainLabel}>Active Clients</Text>
                 <Text style={styles.mainNumber}>{totalClients}</Text>
               </View>
             </View>
@@ -86,23 +88,21 @@ export default function TopStatsWidget({
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+                <Ionicons name="person-add" size={18} color="#FBBF24" />
               </View>
               <View>
-                <Text style={styles.statNumber}>{completedClients}</Text>
-                <Text style={styles.statLabel}>Completed</Text>
+                <Text style={styles.statNumber}>{leadsToFollow}</Text>
+                <Text style={styles.statLabel}>To Follow</Text>
               </View>
             </View>
 
             <View style={styles.statItem}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="trending-up" size={18} color="#60A5FA" />
+                <Ionicons name="checkmark-circle" size={18} color="#34D399" />
               </View>
               <View>
-                <Text style={styles.statNumber}>
-                  {totalClients > 0 ? `${Math.round((completedClients / totalClients) * 100)}%` : '0%'}
-                </Text>
-                <Text style={styles.statLabel}>Success</Text>
+                <Text style={styles.statNumber}>{completedClients}</Text>
+                <Text style={styles.statLabel}>Completed</Text>
               </View>
             </View>
           </View>

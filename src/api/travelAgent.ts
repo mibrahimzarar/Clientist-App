@@ -8,6 +8,7 @@ import {
   Payment,
   ClientFile,
   FollowUp,
+  ClientEarning,
   DashboardSummary,
   ClientAnalytics,
   UpcomingTravel,
@@ -19,6 +20,7 @@ import {
   VisaFormData,
   ReminderFormData,
   PaymentFormData,
+  EarningFormData,
   FileUploadResponse,
   ApiResponse,
   PaginatedResponse
@@ -35,7 +37,7 @@ export async function getClients(
   try {
     let query = supabase
       .from('clients')
-      .select('*', { count: 'exact' })
+      .select('*, client_earnings(*)', { count: 'exact' })
 
     // Apply filters
     if (filters?.search_term) {
@@ -108,7 +110,7 @@ export async function createClient(clientData: ClientFormData): Promise<ApiRespo
       .from('clients')
       .insert([{
         ...clientData,
-        status: clientData.status || 'new',
+        status: clientData.status || 'in_progress',
         priority_tag: clientData.priority_tag || 'normal',
         created_by: user.id,
         updated_by: user.id
@@ -754,6 +756,106 @@ export async function getPendingTasks(limit: number = 10): Promise<ApiResponse<P
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'Failed to fetch pending tasks',
+      success: false
+    }
+  }
+}
+
+// ========== CLIENT EARNINGS OPERATIONS ==========
+
+// Get earnings for a client
+export async function getClientEarnings(clientId: string): Promise<ApiResponse<ClientEarning[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('client_earnings')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('earned_date', { ascending: false })
+
+    if (error) throw error
+
+    return {
+      data: data as ClientEarning[],
+      success: true
+    }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to fetch earnings',
+      success: false
+    }
+  }
+}
+
+// Add earning for a client
+export async function addClientEarning(clientId: string, earningData: EarningFormData): Promise<ApiResponse<ClientEarning>> {
+  try {
+    const { data, error } = await supabase
+      .from('client_earnings')
+      .insert([{
+        client_id: clientId,
+        amount: earningData.amount,
+        currency: earningData.currency || '',
+        description: earningData.description,
+        earned_date: earningData.earned_date || new Date().toISOString().split('T')[0],
+        notes: earningData.notes
+      }])
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return {
+      data: data as ClientEarning,
+      success: true
+    }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to add earning',
+      success: false
+    }
+  }
+}
+
+// Update earning
+export async function updateClientEarning(earningId: string, earningData: Partial<EarningFormData>): Promise<ApiResponse<ClientEarning>> {
+  try {
+    const { data, error } = await supabase
+      .from('client_earnings')
+      .update(earningData)
+      .eq('id', earningId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return {
+      data: data as ClientEarning,
+      success: true
+    }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to update earning',
+      success: false
+    }
+  }
+}
+
+// Delete earning
+export async function deleteClientEarning(earningId: string): Promise<ApiResponse<void>> {
+  try {
+    const { error } = await supabase
+      .from('client_earnings')
+      .delete()
+      .eq('id', earningId)
+
+    if (error) throw error
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to delete earning',
       success: false
     }
   }

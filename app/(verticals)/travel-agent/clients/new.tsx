@@ -49,7 +49,7 @@ export default function NewClient() {
     country: '',
     package_type: 'umrah_package' as PackageType,
     lead_source: 'walk_in' as LeadSource,
-    status: 'new' as ClientStatus,
+    status: 'in_progress' as ClientStatus,
     priority_tag: 'normal' as PriorityTag,
     notes: '',
   })

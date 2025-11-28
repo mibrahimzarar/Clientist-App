@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '../../src/lib/supabase'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NotificationService, NotificationPreferences } from '../../src/services/NotificationService'
+import { getSelectedVertical } from '../../src/lib/verticalStorage'
 
 export default function Profile() {
   const insets = useSafeAreaInsets()
@@ -33,10 +34,24 @@ export default function Profile() {
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({ trips: true, tasks: true, leads: true })
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
+  const [currentVertical, setCurrentVertical] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProfile()
+    loadVertical()
   }, [])
+
+  const loadVertical = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const vertical = await getSelectedVertical(user.id)
+        setCurrentVertical(vertical)
+      }
+    } catch (error) {
+      console.log('Error loading vertical:', error)
+    }
+  }
 
   const fetchProfile = async () => {
     try {
@@ -312,72 +327,145 @@ export default function Profile() {
                 </View>
 
                 <Text style={styles.modalSubtitle}>
-                  Receive reminders for upcoming events. Notifications are sent 1 day before and on the day of the event.
+                  {currentVertical === 'freelancer' 
+                    ? 'Receive reminders for upcoming projects and deadlines. Notifications are sent based on your project timeline.'
+                    : 'Receive reminders for upcoming events. Notifications are sent 1 day before and on the day of the event.'}
                 </Text>
 
                 <View style={styles.togglesContainer}>
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleInfo}>
-                      <View style={[styles.toggleIcon, { backgroundColor: '#ECFDF5' }]}>
-                        <Ionicons name="airplane" size={20} color="#10B981" />
+                  {currentVertical === 'freelancer' ? (
+                    // Freelancer specific notifications
+                    <>
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#ECFDF5' }]}>
+                            <Ionicons name="receipt" size={20} color="#10B981" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Invoices Due Date</Text>
+                            <Text style={styles.toggleDescription}>Payment deadlines</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.trips}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, trips: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                        />
                       </View>
-                      <View>
-                        <Text style={styles.toggleLabel}>Upcoming Trips</Text>
-                        <Text style={styles.toggleDescription}>Reminders for client travel</Text>
-                      </View>
-                    </View>
-                    <Switch
-                      value={notificationPrefs.trips}
-                      onValueChange={(val) => {
-                        const newPrefs = { ...notificationPrefs, trips: val }
-                        setNotificationPrefs(newPrefs)
-                        NotificationService.savePreferences(newPrefs)
-                      }}
-                      trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                    />
-                  </View>
 
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleInfo}>
-                      <View style={[styles.toggleIcon, { backgroundColor: '#FDF2F8' }]}>
-                        <Ionicons name="checkbox" size={20} color="#BE185D" />
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FDF2F8' }]}>
+                            <Ionicons name="checkbox" size={20} color="#BE185D" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Task Deadlines</Text>
+                            <Text style={styles.toggleDescription}>Task deadlines</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.tasks}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, tasks: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#BE185D' }}
+                        />
                       </View>
-                      <View>
-                        <Text style={styles.toggleLabel}>Pending Tasks</Text>
-                        <Text style={styles.toggleDescription}>Reminders for due tasks</Text>
-                      </View>
-                    </View>
-                    <Switch
-                      value={notificationPrefs.tasks}
-                      onValueChange={(val) => {
-                        const newPrefs = { ...notificationPrefs, tasks: val }
-                        setNotificationPrefs(newPrefs)
-                        NotificationService.savePreferences(newPrefs)
-                      }}
-                      trackColor={{ false: '#E5E7EB', true: '#BE185D' }}
-                    />
-                  </View>
 
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleInfo}>
-                      <View style={[styles.toggleIcon, { backgroundColor: '#FEF3C7' }]}>
-                        <Ionicons name="person-add" size={20} color="#D97706" />
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FEF3C7' }]}>
+                            <Ionicons name="person-add" size={20} color="#D97706" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Lead Follow-ups</Text>
+                            <Text style={styles.toggleDescription}>Follow up with leads</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.leads}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, leads: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#D97706' }}
+                        />
                       </View>
-                      <View>
-                        <Text style={styles.toggleLabel}>Lead Follow-ups</Text>
-                        <Text style={styles.toggleDescription}>Reminders to contact leads</Text>
+                    </>
+                  ) : (
+                    // Travel Agent specific notifications
+                    <>
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#ECFDF5' }]}>
+                            <Ionicons name="airplane" size={20} color="#10B981" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Upcoming Trips</Text>
+                            <Text style={styles.toggleDescription}>Reminders for client travel</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.trips}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, trips: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                        />
                       </View>
-                    </View>
-                    <Switch
-                      value={notificationPrefs.leads}
-                      onValueChange={(val) => {
-                        const newPrefs = { ...notificationPrefs, leads: val }
-                        setNotificationPrefs(newPrefs)
-                        NotificationService.savePreferences(newPrefs)
-                      }}
-                      trackColor={{ false: '#E5E7EB', true: '#D97706' }}
-                    />
-                  </View>
+
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FDF2F8' }]}>
+                            <Ionicons name="checkbox" size={20} color="#BE185D" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Pending Tasks</Text>
+                            <Text style={styles.toggleDescription}>Reminders for due tasks</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.tasks}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, tasks: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#BE185D' }}
+                        />
+                      </View>
+
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FEF3C7' }]}>
+                            <Ionicons name="person-add" size={20} color="#D97706" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Lead Follow-ups</Text>
+                            <Text style={styles.toggleDescription}>Reminders to contact leads</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.leads}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, leads: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#D97706' }}
+                        />
+                      </View>
+                    </>
+                  )}
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -425,6 +513,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    paddingBottom: 100,
   },
   profileCard: {
     backgroundColor: '#fff',
@@ -439,29 +528,34 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   avatarSection: {
-    marginBottom: 20,
+    marginBottom: 24,
+    alignItems: 'center',
   },
   logoContainer: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    padding: 4,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#8B5CF6',
+    padding: 2,
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logo: {
     width: '100%',
     height: '100%',
-    borderRadius: 55,
+    borderRadius: 58,
   },
   logoPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 55,
+    borderRadius: 58,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -472,7 +566,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 55,
+    borderRadius: 58,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -481,35 +575,45 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     backgroundColor: '#8B5CF6',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#fff',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   profileInfo: {
     width: '100%',
     alignItems: 'center',
+    paddingHorizontal: 12,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B5CF6',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 1.5,
+    marginBottom: 8,
   },
   companyNameInput: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 8,
     minWidth: 200,
+    borderBottomWidth: 2,
+    borderBottomColor: '#F3F4F6',
+    flexWrap: 'wrap',
+    maxWidth: '90%',
   },
   emailBadge: {
     flexDirection: 'row',

@@ -58,7 +58,7 @@ export default function TopStatsWidget({
       {/* Main Stats Card */}
       <View>
         <LinearGradient
-          colors={['#4F46E5', '#7C3AED']}
+          colors={['#0D8ABC', '#0A5F8F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.mainCard}
@@ -70,8 +70,8 @@ export default function TopStatsWidget({
                 <Ionicons name="briefcase" size={32} color="#fff" />
               </View>
               <View style={styles.mainStatsContent}>
-                <Text style={styles.mainLabel}>Total Projects</Text>
-                <Text style={styles.mainNumber}>{totalClients}</Text>
+                <Text style={styles.mainLabel}>Active Projects</Text>
+                <Text style={styles.mainNumber}>{activeClients}</Text>
               </View>
             </View>
 
@@ -97,13 +97,11 @@ export default function TopStatsWidget({
 
             <View style={styles.statItem}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="trending-up" size={18} color="#60A5FA" />
+                <Ionicons name="layers" size={18} color="#80A5GC" />
               </View>
               <View>
-                <Text style={styles.statNumber}>
-                  {totalClients > 0 ? `${Math.round((completedClients / totalClients) * 100)}%` : '0%'}
-                </Text>
-                <Text style={styles.statLabel}>Success</Text>
+                <Text style={styles.statNumber}>{totalClients}</Text>
+                <Text style={styles.statLabel}>Total</Text>
               </View>
             </View>
           </View>
@@ -173,7 +171,7 @@ const styles = StyleSheet.create({
   mainCard: {
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#4F46E5',
+    shadowColor: '#0D8ABC',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
     shadowRadius: 24,

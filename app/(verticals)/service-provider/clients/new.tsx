@@ -21,7 +21,7 @@ export default function NewClient() {
     country: '',
     package_type: 'visit_visa' as PackageType, // Default to visit visa for service provider
     lead_source: 'referral' as LeadSource, // Default to referral for service provider
-    status: 'new' as ClientStatus,
+    status: 'in_progress' as ClientStatus,
     priority_tag: 'normal' as PriorityTag,
     notes: '',
   })

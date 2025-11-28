@@ -77,8 +77,7 @@ export default function TravelAgentClientDetail() {
 
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
-      case 'pending': return ['#6B7280', '#4B5563']
-      case 'in_progress': return ['#F59E0B', '#D97706']
+      case 'in_progress': return ['#667EEA', '#5A67D8']
       case 'rejected': return ['#DC2626', '#B91C1C']
       case 'completed': return ['#059669', '#047857']
       default: return ['#6B7280', '#4B5563']
@@ -196,7 +195,7 @@ export default function TravelAgentClientDetail() {
       {/* Status Picker Modal */}
       {showStatusPicker && (
         <View style={styles.pickerContainer}>
-          {(['pending', 'in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
+          {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
             <TouchableOpacity
               key={status}
               style={styles.pickerItem}

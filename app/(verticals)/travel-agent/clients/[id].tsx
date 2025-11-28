@@ -8,25 +8,35 @@ import {
   Alert,
   RefreshControl,
   Image,
+  TextInput,
+  Modal,
 } from 'react-native'
 import { NotesTimeline } from '../../../../src/components/notes/NotesTimeline'
+import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useClient, useUpdateClient, useDeleteClient } from '../../../../src/hooks/useTravelAgent'
-import { TravelClient, ClientStatus, PackageType, PriorityTag } from '../../../../src/types/travelAgent'
+import { useClient, useUpdateClient, useDeleteClient, useClientEarnings, useAddClientEarning, useDeleteClientEarning } from '../../../../src/hooks/useTravelAgent'
+import { TravelClient, ClientStatus, PackageType, PriorityTag, EarningFormData } from '../../../../src/types/travelAgent'
 
 export default function TravelAgentClientDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const [refreshing, setRefreshing] = useState(false)
   const [showStatusPicker, setShowStatusPicker] = useState(false)
   const [showPriorityPicker, setShowPriorityPicker] = useState(false)
+  const [showEarningModal, setShowEarningModal] = useState(false)
+  const [earningAmount, setEarningAmount] = useState('')
+  const [earningNotes, setEarningNotes] = useState('')
 
   const { data: clientData, isLoading, error, refetch } = useClient(id!)
+  const { data: earningsData } = useClientEarnings(id!)
   const updateClient = useUpdateClient()
   const deleteClient = useDeleteClient()
+  const addEarning = useAddClientEarning()
+  const deleteEarning = useDeleteClientEarning()
 
   const client = clientData?.data
+  const earnings = earningsData?.data || []
 
   const onRefresh = async () => {
     setRefreshing(true)
@@ -52,6 +62,28 @@ export default function TravelAgentClientDetail() {
     }
   }
 
+  const handleDeleteEarning = (earningId: string) => {
+    Alert.alert(
+      'Delete Earning',
+      'Are you sure you want to delete this earning record?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEarning.mutateAsync(earningId)
+              Alert.alert('Success', 'Earning deleted successfully')
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete earning')
+            }
+          },
+        },
+      ]
+    )
+  }
+
   const handleDeleteClient = () => {
     Alert.alert(
       'Delete Client',
@@ -74,10 +106,34 @@ export default function TravelAgentClientDetail() {
     )
   }
 
+  const handleAddEarning = async () => {
+    if (!earningAmount || isNaN(Number(earningAmount))) {
+      Alert.alert('Error', 'Please enter a valid amount')
+      return
+    }
+
+    try {
+      await addEarning.mutateAsync({
+        clientId: id!,
+        data: {
+          amount: Number(earningAmount),
+          currency: '',
+          notes: earningNotes,
+          earned_date: new Date().toISOString().split('T')[0]
+        }
+      })
+      setShowEarningModal(false)
+      setEarningAmount('')
+      setEarningNotes('')
+      Alert.alert('Success', 'Earning added successfully')
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add earning')
+    }
+  }
+
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
-      case 'pending': return ['#6B7280', '#4B5563']
-      case 'in_progress': return ['#F59E0B', '#D97706']
+      case 'in_progress': return ['#667EEA', '#5A67D8']
       case 'rejected': return ['#DC2626', '#B91C1C']
       case 'completed': return ['#059669', '#047857']
       default: return ['#6B7280', '#4B5563']
@@ -106,7 +162,7 @@ export default function TravelAgentClientDetail() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading client details...</Text>
+        <BouncingBallsLoader />
       </View>
     )
   }
@@ -195,7 +251,7 @@ export default function TravelAgentClientDetail() {
       {/* Status Picker Modal */}
       {showStatusPicker && (
         <View style={styles.pickerContainer}>
-          {(['pending', 'in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
+          {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
             <TouchableOpacity
               key={status}
               style={styles.pickerItem}
@@ -308,8 +364,6 @@ export default function TravelAgentClientDetail() {
             </LinearGradient>
           </TouchableOpacity>
 
-
-
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => router.push(`/(verticals)/travel-agent/documents?clientId=${id}&type=payment_receipt`)}
@@ -341,6 +395,120 @@ export default function TravelAgentClientDetail() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Earnings Section - Only show if client is completed */}
+      {client.status === 'completed' && (
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="cash" size={20} color="#10B981" />
+            <Text style={styles.cardTitle}>Earnings</Text>
+          </View>
+          <View style={styles.cardContent}>
+            {earnings.length > 0 ? (
+              <View>
+                {earnings.map((earning, index) => (
+                  <View key={earning.id} style={[styles.earningItem, index !== earnings.length - 1 && styles.earningItemBorder]}>
+                    <View style={styles.earningItemLeft}>
+                      <Text style={styles.earningAmount}>
+                        {earning.currency} {earning.amount.toFixed(2)}
+                      </Text>
+                      {earning.notes && (
+                        <Text style={styles.earningNotes}>{earning.notes}</Text>
+                      )}
+                      <Text style={styles.earningDate}>
+                        {new Date(earning.earned_date).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteEarning(earning.id)}
+                      style={styles.deleteEarningButton}
+                    >
+                      <Ionicons name="trash" size={18} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={styles.earningTotalRow}>
+                  <Text style={styles.earningTotalLabel}>Total Earnings:</Text>
+                  <Text style={styles.earningTotalAmount}>
+                     {earnings.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.noEarningsText}>No earnings recorded yet</Text>
+            )}</View>
+          <TouchableOpacity
+            style={styles.addEarningButton}
+            onPress={() => setShowEarningModal(true)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={styles.addEarningButtonText}>Add Earning</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Earnings Modal */}
+      {showEarningModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Add Earning</Text>
+                <Text style={styles.modalSubtitle}>Record your profit from this client</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEarningModal(false)}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Amount</Text>
+                <View style={styles.amountInputWrapper}>
+                  <Text style={styles.currencySymbol}>$</Text>
+                  <TextInput
+                    style={styles.amountInput}
+                    placeholder="0.00"
+                    keyboardType="decimal-pad"
+                    value={earningAmount}
+                    onChangeText={setEarningAmount}
+                    placeholderTextColor="#D1D5DB"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Notes (Optional)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.notesInput]}
+                  placeholder="Add notes about this earning..."
+                  multiline
+                  numberOfLines={3}
+                  value={earningNotes}
+                  onChangeText={setEarningNotes}
+                  placeholderTextColor="#D1D5DB"
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowEarningModal(false)}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSubmitButton}
+                onPress={handleAddEarning}
+              >
+                <Ionicons name="checkmark" size={20} color="#fff" style={styles.submitIcon} />
+                <Text style={styles.modalSubmitButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Notes Timeline */}
       <NotesTimeline clientId={id as string} />
@@ -602,6 +770,202 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  earningItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    gap: 12,
+  },
+  earningItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  earningItemLeft: {
+    flex: 1,
+  },
+  earningAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#10B981',
+    marginBottom: 4,
+  },
+  earningNotes: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  earningDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  deleteEarningButton: {
+    padding: 8,
+  },
+  earningTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  earningTotalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  earningTotalAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  noEarningsText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  addEarningButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#10B981',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    marginTop: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  addEarningButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  modalBody: {
+    padding: 24,
+    paddingBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  amountInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  currencySymbol: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#10B981',
+    marginRight: 8,
+  },
+  amountInput: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#111827',
+  },
+  notesInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+    paddingTop: 14,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+    paddingTop: 8,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  modalCancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  submitIcon: {
+    marginRight: 4,
+  },
+  modalSubmitButtonText: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#fff',
   },

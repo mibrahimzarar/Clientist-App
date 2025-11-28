@@ -205,7 +205,7 @@ export async function convertLeadToClient(leadId: string): Promise<ApiResponse<T
       country: lead.country || 'Unknown',
       package_type: lead.interested_package || 'tourist_visa',
       lead_source: lead.lead_source,
-      status: 'pending',
+      status: 'in_progress',
       priority_tag: lead.priority_tag,
       notes: lead.notes
     }

@@ -16,6 +16,10 @@ import {
   updateReminderStatus,
   getPayments,
   createPayment,
+  getClientEarnings,
+  addClientEarning,
+  updateClientEarning,
+  deleteClientEarning,
   uploadClientFile,
   getDashboardSummary,
   getClientAnalytics,
@@ -28,6 +32,7 @@ import {
   VisaFormData,
   ReminderFormData,
   PaymentFormData,
+  EarningFormData,
   SearchFilters
 } from '../types/travelAgent'
 
@@ -255,5 +260,53 @@ export function usePendingTasks(limit: number = 10) {
     queryKey: ['pending-tasks', limit],
     queryFn: () => getPendingTasks(limit),
     staleTime: 60 * 1000, // 1 minute for tasks
+  })
+}
+
+// ========== EARNINGS HOOKS ==========
+
+export function useClientEarnings(clientId: string) {
+  return useQuery({
+    queryKey: ['client-earnings', clientId],
+    queryFn: () => getClientEarnings(clientId),
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useAddClientEarning() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ clientId, data }: { clientId: string; data: EarningFormData }) => 
+      addClientEarning(clientId, data),
+    onSuccess: (_, { clientId }) => {
+      queryClient.invalidateQueries({ queryKey: ['client-earnings', clientId] })
+      queryClient.invalidateQueries({ queryKey: ['client', clientId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
+    },
+  })
+}
+
+export function useUpdateClientEarning() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<EarningFormData> }) => 
+      updateClientEarning(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-earnings'] })
+    },
+  })
+}
+
+export function useDeleteClientEarning() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: deleteClientEarning,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-earnings'] })
+    },
   })
 }

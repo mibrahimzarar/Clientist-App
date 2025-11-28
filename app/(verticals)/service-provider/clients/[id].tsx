@@ -73,7 +73,6 @@ export default function ServiceProviderClientDetail() {
 
   const getStatusColor = (status: ClientStatus) => {
     switch (status) {
-      case 'pending': return '#6B7280'
       case 'in_progress': return '#F59E0B'
       case 'rejected': return '#DC2626'
       case 'completed': return '#059669'
@@ -169,7 +168,7 @@ export default function ServiceProviderClientDetail() {
         {/* Status Picker */}
         {showStatusPicker && (
           <View style={styles.pickerContainer}>
-            {(['pending', 'in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
+            {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
               <TouchableOpacity
                 key={status}
                 style={styles.pickerItem}

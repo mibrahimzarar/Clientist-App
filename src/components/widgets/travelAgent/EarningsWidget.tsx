@@ -9,51 +9,41 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useFreelancerInvoices } from '../../../hooks/useFreelancer'
-
-interface EarningRecord {
-    monthYear: string
-    month: number
-    year: number
-    monthlyEarning: number
-    yearlyEarning: number
-}
+import { useClients } from '../../../hooks/useTravelAgent'
 
 export function EarningsWidget() {
-    const { data: invoicesData } = useFreelancerInvoices()
+    const { data: clientsData, refetch } = useClients(1, 1000) // Fetch all clients to get earnings
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
     const [showMonthPicker, setShowMonthPicker] = useState(false)
     const [showYearPicker, setShowYearPicker] = useState(false)
 
-    // Calculate earnings from invoices (paid and sent)
-    const earningsData = useMemo(() => {
-        if (!invoicesData?.data) return { availableMonths: [], availableYears: [], monthlyEarning: 0, yearlyEarning: 0 }
+    // Refetch clients when component mounts or dashboard is focused
+    React.useEffect(() => {
+        refetch()
+    }, [])
 
-        const earnedInvoices = invoicesData.data.filter(inv => inv.status === 'paid' || inv.status === 'sent')
+    // Calculate earnings from completed clients
+    const earningsData = useMemo(() => {
+        if (!clientsData?.data?.data) return { availableYears: [], monthlyEarning: 0, yearlyEarning: 0 }
+
+        const clients = clientsData.data.data
         const earningsByMonthYear: { [key: string]: number } = {}
         const yearSet = new Set<number>()
-        const monthYearSet = new Set<string>()
 
-        earnedInvoices.forEach(invoice => {
-            const date = new Date(invoice.due_date)
-            const year = date.getFullYear()
-            const month = date.getMonth()
-            const monthYearKey = `${year}-${month}`
+        clients.forEach(client => {
+            if (client.status === 'completed' && client.client_earnings && client.client_earnings.length > 0) {
+                client.client_earnings.forEach(earning => {
+                    // Parse date string (e.g., "2025-11-28") properly
+                    const dateStr = earning.earned_date
+                    const [year, month, day] = dateStr.split('-').map(Number)
+                    const monthYearKey = `${year}-${month - 1}` // month is 0-indexed
 
-            earningsByMonthYear[monthYearKey] = (earningsByMonthYear[monthYearKey] || 0) + (invoice.total_amount || 0)
-            yearSet.add(year)
-            monthYearSet.add(monthYearKey)
+                    earningsByMonthYear[monthYearKey] = (earningsByMonthYear[monthYearKey] || 0) + earning.amount
+                    yearSet.add(year)
+                })
+            }
         })
-
-        // Get available months for selected year
-        const availableMonths = Array.from(monthYearSet)
-            .filter(key => key.startsWith(`${selectedYear}-`))
-            .map(key => {
-                const [year, month] = key.split('-').map(Number)
-                return { month, year, monthYear: key }
-            })
-            .sort((a, b) => b.month - a.month)
 
         // Calculate monthly earning for selected month
         const currentMonthKey = `${selectedYear}-${selectedMonth}`
@@ -67,16 +57,13 @@ export function EarningsWidget() {
         }
 
         return {
-            availableMonths,
             availableYears: Array.from(yearSet).sort((a, b) => b - a),
             monthlyEarning,
             yearlyEarning,
-            allMonthsForYear: availableMonths
         }
-    }, [invoicesData?.data, selectedYear, selectedMonth])
+    }, [clientsData?.data?.data, selectedYear, selectedMonth])
 
     const monthName = new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long' })
-    const formattedMonthYear = `${monthName} ${selectedYear}`
 
     const handleMonthSelect = (month: number) => {
         setSelectedMonth(month)
@@ -91,12 +78,12 @@ export function EarningsWidget() {
     const formatEarnings = (amount: number): string => {
         if (amount === 0) return '0'
         if (amount >= 1000000) {
-            return '' + Math.floor(amount / 1000000) + 'M'
+            return Math.floor(amount / 1000000) + 'M'
         }
         if (amount >= 1000) {
-            return '' + Math.floor(amount / 1000) + 'k'
+            return Math.floor(amount / 1000) + 'k'
         }
-        return '' + amount.toFixed(2)
+        return amount.toFixed(0)
     }
 
     return (
@@ -111,7 +98,7 @@ export function EarningsWidget() {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.title}>Earnings</Text>
-                        <Text style={styles.subtitle}>From paid invoices</Text>
+                        <Text style={styles.subtitle}>From completed clients</Text>
                     </View>
                     <Ionicons name="trending-up" size={32} color="#fff" />
                 </View>
@@ -154,7 +141,7 @@ export function EarningsWidget() {
 
                 {/* Info Text */}
                 <Text style={styles.infoText}>
-                    Showing earnings from sent and paid invoices
+                    Showing earnings from completed clients
                 </Text>
             </LinearGradient>
 
@@ -214,7 +201,7 @@ export function EarningsWidget() {
                             </TouchableOpacity>
                         </View>
                         <FlatList
-                            data={earningsData.availableYears}
+                            data={earningsData.availableYears.length > 0 ? earningsData.availableYears : [new Date().getFullYear()]}
                             keyExtractor={(item) => item.toString()}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
@@ -246,6 +233,7 @@ const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 20,
         marginBottom: 0,
+        marginTop: 32,
     },
     widget: {
         borderRadius: 24,
