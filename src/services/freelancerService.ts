@@ -325,6 +325,10 @@ export const freelancerService = {
     },
 
     createInvoice: async (invoice: Partial<FreelancerInvoice>, items: Partial<FreelancerInvoiceItem>[]) => {
+        console.log('=== CREATING INVOICE ===')
+        console.log('Invoice object:', invoice)
+        console.log('Project ID:', invoice.project_id)
+        
         const { data: invoiceData, error: invoiceError } = await supabase
             .from('freelancer_invoices')
             .insert(invoice)

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useFreelancerTask, useUpdateTask, useFreelancerProjects, useDeleteTask } from '../../../../../src/hooks/useFreelancer'
 import { TaskStatus, ProjectPriority } from '../../../../../src/types/freelancer'
+import { DatePickerInput } from '../../../../../src/components/ui/DatePickerInput'
 
 export default function EditTaskPage() {
     const { id } = useLocalSearchParams<{ id: string }>()
@@ -172,12 +173,11 @@ export default function EditTaskPage() {
                             />
                         </View>
                         <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                            <Text style={styles.label}>Due Date</Text>
-                            <TextInput
-                                style={styles.input}
+                            <DatePickerInput
+                                label="Due Date"
                                 value={formData.due_date}
-                                onChangeText={(text) => setFormData({ ...formData, due_date: text })}
-                                placeholder="YYYY-MM-DD"
+                                onChange={(date) => setFormData({ ...formData, due_date: date })}
+                                placeholder="Select due date"
                             />
                         </View>
                     </View>

@@ -6,79 +6,38 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { supabase } from '../../lib/supabase'
+import { useFreelancerTasks, useFreelancerLeads, useFreelancerInvoices } from '../../../hooks/useFreelancer'
 
 interface DayData {
     date: Date
-    hasTrip: boolean
     hasTask: boolean
     hasLead: boolean
+    hasInvoice: boolean
     isToday: boolean
 }
 
-export function CalendarWidget() {
+export function FreelancerCalendarWidget() {
     const [daysData, setDaysData] = useState<DayData[]>([])
     const [loading, setLoading] = useState(true)
 
+    const { data: tasksData } = useFreelancerTasks()
+    const { data: leadsData } = useFreelancerLeads()
+    const { data: invoicesData } = useFreelancerInvoices()
+
     useEffect(() => {
-        fetchCalendarData()
-    }, [])
+        if (tasksData && leadsData && invoicesData) {
+            processCalendarData()
+        }
+    }, [tasksData, leadsData, invoicesData])
 
-    const fetchCalendarData = async () => {
+    const processCalendarData = () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            // Get next 30 days
             const today = new Date()
             today.setHours(0, 0, 0, 0)
-            const endDate = new Date(today)
-            endDate.setDate(endDate.getDate() + 30)
 
-            // Fetch trips
-            const { data: trips } = await supabase
-                .from('travel_trips')
-                .select('departure_date, destination_date')
-                .eq('created_by', user.id)
-                .gte('departure_date', today.toISOString())
-                .lte('departure_date', endDate.toISOString())
-
-            // Fetch tasks
-            const { data: tasks } = await supabase
-                .from('client_tasks')
-                .select('due_date')
-                .eq('created_by', user.id)
-                .eq('status', 'pending')
-                .gte('due_date', today.toISOString())
-                .lte('due_date', endDate.toISOString())
-
-            // Fetch leads with follow-up dates
-            const { data: leads } = await supabase
-                .from('leads')
-                .select('follow_up_date')
-                .eq('created_by', user.id)
-                .not('lead_status', 'in', '(converted,not_interested)')
-                .gte('follow_up_date', today.toISOString().split('T')[0])
-                .lte('follow_up_date', endDate.toISOString().split('T')[0])
-
-            // Create trip dates set
-            const tripDates = new Set<string>()
-            trips?.forEach(trip => {
-                if (trip.departure_date) {
-                    const date = new Date(trip.departure_date)
-                    date.setHours(0, 0, 0, 0)
-                    tripDates.add(date.toDateString())
-                }
-                if (trip.destination_date) {
-                    const date = new Date(trip.destination_date)
-                    date.setHours(0, 0, 0, 0)
-                    tripDates.add(date.toDateString())
-                }
-            })
-
-            // Create task dates set
+            // Create task dates set (due dates)
             const taskDates = new Set<string>()
-            tasks?.forEach(task => {
+            tasksData?.data?.forEach(task => {
                 if (task.due_date) {
                     const date = new Date(task.due_date)
                     date.setHours(0, 0, 0, 0)
@@ -86,17 +45,27 @@ export function CalendarWidget() {
                 }
             })
 
-            // Create lead dates set
+            // Create lead dates set (follow ups)
             const leadDates = new Set<string>()
-            leads?.forEach(lead => {
-                if (lead.follow_up_date) {
-                    const date = new Date(lead.follow_up_date)
+            leadsData?.data?.forEach(lead => {
+                if (lead.next_follow_up) {
+                    const date = new Date(lead.next_follow_up)
                     date.setHours(0, 0, 0, 0)
                     leadDates.add(date.toDateString())
                 }
             })
 
-            // Build days array
+            // Create invoice dates set (due dates)
+            const invoiceDates = new Set<string>()
+            invoicesData?.data?.forEach(invoice => {
+                if (invoice.due_date) {
+                    const date = new Date(invoice.due_date)
+                    date.setHours(0, 0, 0, 0)
+                    invoiceDates.add(date.toDateString())
+                }
+            })
+
+            // Build days array for next 30 days
             const days: DayData[] = []
             const todayStr = today.toDateString()
 
@@ -107,16 +76,16 @@ export function CalendarWidget() {
 
                 days.push({
                     date,
-                    hasTrip: tripDates.has(dateStr),
                     hasTask: taskDates.has(dateStr),
                     hasLead: leadDates.has(dateStr),
+                    hasInvoice: invoiceDates.has(dateStr),
                     isToday: dateStr === todayStr,
                 })
             }
 
             setDaysData(days)
         } catch (error) {
-            console.error('Error fetching calendar data:', error)
+            console.error('Error processing calendar data:', error)
         } finally {
             setLoading(false)
         }
@@ -134,48 +103,39 @@ export function CalendarWidget() {
                     let borderColors: [string, string] = ['#E5E7EB', '#E5E7EB']
                     let hasMultiple = false
 
-                    if (day.hasTrip && day.hasTask && day.hasLead) {
-                        borderColors = ['#10B981', '#F59E0B'] // Green to Orange
+                    const activeItems = [day.hasTask, day.hasLead, day.hasInvoice].filter(Boolean).length
+
+                    if (activeItems > 1) {
                         hasMultiple = true
-                    } else if (day.hasTrip && day.hasTask) {
-                        borderColors = ['#10B981', '#ba509eff'] // Green to Purple
-                        hasMultiple = true
-                    } else if (day.hasTrip && day.hasLead) {
-                        borderColors = ['#10B981', '#F59E0B'] // Green to Orange
-                        hasMultiple = true
-                    } else if (day.hasTask && day.hasLead) {
-                        borderColors = ['#ba509eff', '#F59E0B'] // Purple to Orange
-                        hasMultiple = true
-                    } else if (day.hasTrip) {
-                        borderColor = '#10B981' // Green for trip
+                        // Simple gradient logic for multiples
+                        if (day.hasTask) borderColors = ['#EC4899', '#F59E0B']
+                        else if (day.hasLead) borderColors = ['#F59E0B', '#10B981']
                     } else if (day.hasTask) {
-                        borderColor = '#ba509eff' // Purple for task
+                        borderColor = '#EC4899' // Pink for task
                     } else if (day.hasLead) {
                         borderColor = '#F59E0B' // Orange for lead
+                    } else if (day.hasInvoice) {
+                        borderColor = '#10B981' // Green for invoice
                     }
+
+                    const hasActivity = activeItems > 0
 
                     return (
                         <View key={index} style={styles.dayCell}>
                             {day.isToday ? (
                                 <LinearGradient
-                                    colors={['#4F46E5', '#7C3AED']}
+                                    colors={['#8B5CF6', '#7C3AED']}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                     style={styles.dayCardGradient}
                                 >
                                     <Text style={styles.dayNameToday}>{dayName}</Text>
                                     <Text style={styles.dayNumberToday}>{dayNum}</Text>
-                                    {(day.hasTrip || day.hasTask || day.hasLead) && (
+                                    {hasActivity && (
                                         <View style={styles.indicators}>
-                                            {day.hasTrip && (
-                                                <Ionicons name="airplane" size={8} color="#fff" />
-                                            )}
-                                            {day.hasTask && (
-                                                <Ionicons name="checkbox" size={8} color="#fff" />
-                                            )}
-                                            {day.hasLead && (
-                                                <Ionicons name="person-add" size={8} color="#fff" />
-                                            )}
+                                            {day.hasTask && <Ionicons name="checkbox" size={8} color="#fff" />}
+                                            {day.hasLead && <Ionicons name="person-add" size={8} color="#fff" />}
+                                            {day.hasInvoice && <Ionicons name="receipt" size={8} color="#fff" />}
                                         </View>
                                     )}
                                 </LinearGradient>
@@ -192,21 +152,15 @@ export function CalendarWidget() {
                                                 <Text style={styles.dayName}>{dayName}</Text>
                                                 <Text style={styles.dayNumber}>{dayNum}</Text>
                                                 <View style={styles.indicators}>
-                                                    {day.hasTrip && (
-                                                        <Ionicons name="airplane" size={7} color="#10B981" />
-                                                    )}
-                                                    {day.hasTask && (
-                                                        <Ionicons name="checkbox" size={7} color="#ba509eff" />
-                                                    )}
-                                                    {day.hasLead && (
-                                                        <Ionicons name="person-add" size={7} color="#F59E0B" />
-                                                    )}
+                                                    {day.hasTask && <Ionicons name="checkbox" size={7} color="#EC4899" />}
+                                                    {day.hasLead && <Ionicons name="person-add" size={7} color="#F59E0B" />}
+                                                    {day.hasInvoice && <Ionicons name="receipt" size={7} color="#10B981" />}
                                                 </View>
                                             </View>
                                         </LinearGradient>
                                     ) : (
                                         <View style={[styles.dayCard,
-                                        (day.hasTrip || day.hasTask || day.hasLead) && {
+                                        hasActivity && {
                                             borderColor: borderColor,
                                             borderWidth: 2,
                                             shadowColor: borderColor,
@@ -218,17 +172,11 @@ export function CalendarWidget() {
                                         ]}>
                                             <Text style={styles.dayName}>{dayName}</Text>
                                             <Text style={styles.dayNumber}>{dayNum}</Text>
-                                            {(day.hasTrip || day.hasTask || day.hasLead) && (
+                                            {hasActivity && (
                                                 <View style={styles.indicators}>
-                                                    {day.hasTrip && (
-                                                        <Ionicons name="airplane" size={7} color="#10B981" />
-                                                    )}
-                                                    {day.hasTask && (
-                                                        <Ionicons name="checkbox" size={7} color="#ba509eff" />
-                                                    )}
-                                                    {day.hasLead && (
-                                                        <Ionicons name="person-add" size={7} color="#F59E0B" />
-                                                    )}
+                                                    {day.hasTask && <Ionicons name="checkbox" size={7} color="#EC4899" />}
+                                                    {day.hasLead && <Ionicons name="person-add" size={7} color="#F59E0B" />}
+                                                    {day.hasInvoice && <Ionicons name="receipt" size={7} color="#10B981" />}
                                                 </View>
                                             )}
                                         </View>
@@ -247,7 +195,7 @@ export function CalendarWidget() {
             <View style={styles.wrapper}>
                 <View style={styles.container}>
                     <View style={styles.header}>
-                        <Ionicons name="calendar" size={20} color="#4F46E5" />
+                        <Ionicons name="calendar" size={20} color="#8B5CF6" />
                         <Text style={styles.title}>Upcoming 30 Days</Text>
                     </View>
                     <View style={styles.loadingContainer}>
@@ -268,7 +216,7 @@ export function CalendarWidget() {
         <View style={styles.wrapper}>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <Ionicons name="calendar" size={20} color="#4F46E5" />
+                    <Ionicons name="calendar" size={20} color="#8B5CF6" />
                     <Text style={styles.title}>Upcoming 30 Days</Text>
                 </View>
 
@@ -284,16 +232,16 @@ export function CalendarWidget() {
                 {/* Legend */}
                 <View style={styles.legend}>
                     <View style={styles.legendItem}>
-                        <Ionicons name="airplane" size={12} color="#10B981" />
-                        <Text style={styles.legendText}>Trip</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                        <Ionicons name="checkbox" size={12} color="#ba509eff" />
+                        <Ionicons name="checkbox" size={12} color="#EC4899" />
                         <Text style={styles.legendText}>Task</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <Ionicons name="person-add" size={12} color="#F59E0B" />
                         <Text style={styles.legendText}>Lead</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <Ionicons name="receipt" size={12} color="#10B981" />
+                        <Text style={styles.legendText}>Invoice</Text>
                     </View>
                 </View>
             </View>
@@ -311,8 +259,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         borderWidth: 2,
-        borderColor: '#E0E7FF',
-        shadowColor: '#4F46E5',
+        borderColor: '#F3E8FF',
+        shadowColor: '#8B5CF6',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.15,
         shadowRadius: 12,

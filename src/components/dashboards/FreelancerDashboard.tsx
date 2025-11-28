@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '../../lib/supabase'
-import { useFreelancerStats, useActiveProjects, useFreelancerTasks, useFreelancerLeads } from '../../hooks/useFreelancer'
-import TopStatsWidget from '../dashboard/TopStatsWidget' // Reusing this generic widget
-import { FreelancerCalendarWidget } from '../calendar/FreelancerCalendarWidget'
-import { SmartRemindersWidget } from './SmartRemindersWidget'
+import { useFreelancerStats, useActiveProjects, useFreelancerTasks, useFreelancerLeads, useFreelancerInvoices } from '../../hooks/useFreelancer'
+import TopStatsWidget from '../widgets/freelancer/TopStatsWidget'
+import { FreelancerCalendarWidget } from '../widgets/freelancer/FreelancerCalendarWidget'
+import { SmartRemindersWidget } from '../widgets/freelancer/SmartRemindersWidget'
+import { EarningsWidget } from '../widgets/freelancer/EarningsWidget'
 
 const { width } = Dimensions.get('window')
 
@@ -18,12 +19,16 @@ export default function FreelancerDashboard() {
   const { data: projectsData } = useActiveProjects()
   const { data: tasksData } = useFreelancerTasks()
   const { data: leadsData } = useFreelancerLeads()
+  const { data: invoicesData } = useFreelancerInvoices()
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
 
   const stats = statsData
   const projects = projectsData?.data || []
   const tasks = tasksData?.data || []
   const leads = leadsData?.data || []
+  
+  // Calculate total projects (not just active) for success percentage
+  const totalProjects = (stats?.active_projects || 0) + (stats?.completed_projects || 0)
 
   useFocusEffect(
     React.useCallback(() => {
@@ -54,18 +59,51 @@ export default function FreelancerDashboard() {
     await supabase.auth.signOut()
   }
 
-  // Prepare notifications (mock for now)
-  const urgentTaskCount = tasks?.filter(t => t.priority === 'urgent').length || 0
+  // Prepare notifications for Today's Schedule
+  const todayTaskCount = tasks?.filter(t => {
+    if (!t.due_date) return false
+    const taskDate = new Date(t.due_date).toDateString()
+    const today = new Date().toDateString()
+    return taskDate === today
+  }).length || 0
+  const overdueLead = leads?.filter(l => l.next_follow_up && new Date(l.next_follow_up).toDateString() === new Date().toDateString()).length || 0
+  const dueInvoices = invoicesData?.data?.filter(inv => {
+    const dueDate = new Date(inv.due_date).toDateString()
+    const today = new Date().toDateString()
+    return dueDate === today && inv.status !== 'paid'
+  }).length || 0
   const notifications = []
 
-  if (urgentTaskCount > 0) {
+  if (todayTaskCount > 0) {
     notifications.push({
       id: 'tasks',
       type: 'task' as const,
       title: 'Tasks Due Today',
-      subtitle: `${urgentTaskCount} urgent tasks`,
-      count: urgentTaskCount,
+      subtitle: `${todayTaskCount} task${todayTaskCount > 1 ? 's' : ''}`,
+      count: todayTaskCount,
       route: '/(verticals)/freelancer/tasks'
+    })
+  }
+
+  if (overdueLead > 0) {
+    notifications.push({
+      id: 'leads',
+      type: 'lead' as const,
+      title: 'Leads to Follow Up',
+      subtitle: `${overdueLead} follow-up${overdueLead > 1 ? 's' : ''}`,
+      count: overdueLead,
+      route: '/(verticals)/freelancer/leads'
+    })
+  }
+
+  if (dueInvoices > 0) {
+    notifications.push({
+      id: 'invoices',
+      type: 'invoice' as const,
+      title: 'Invoices Due Today',
+      subtitle: `${dueInvoices} invoice${dueInvoices > 1 ? 's' : ''}`,
+      count: dueInvoices,
+      route: '/(verticals)/freelancer/invoices'
     })
   }
 
@@ -89,7 +127,7 @@ export default function FreelancerDashboard() {
 
         {/* Top Stats Widget */}
         <TopStatsWidget
-          totalClients={stats?.total_clients || 0}
+          totalClients={totalProjects}
           activeClients={stats?.active_projects || 0} // Using active projects as proxy for active work
           completedClients={stats?.completed_projects || 0}
           urgentTasks={stats?.overdue_tasks_count || 0}
@@ -143,10 +181,8 @@ export default function FreelancerDashboard() {
         {/* Smart Reminders Widget */}
         <SmartRemindersWidget />
 
-        {/* Bottom Widgets Container */}
-        <View style={styles.bottomWidgets}>
-
-          {/* Active Projects Widget */}
+        {/* Active Projects Widget */}
+        <View style={styles.activeProjectsContainer}>
           <View style={styles.widgetWithShadow}>
             <View style={styles.widgetInner}>
               <LinearGradient
@@ -196,59 +232,10 @@ export default function FreelancerDashboard() {
               </View>
             </View>
           </View>
-
-          {/* Pending Tasks Widget */}
-          <View style={styles.widgetWithShadow}>
-            <View style={styles.widgetInner}>
-              <LinearGradient
-                colors={['#EC4899', '#DB2777']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.widgetHeader}
-              >
-                <View style={styles.widgetHeaderContent}>
-                  <View style={styles.widgetIconContainer}>
-                    <Ionicons name="checkbox" size={20} color="#DB2777" />
-                  </View>
-                  <View>
-                    <Text style={styles.widgetTitle}>Pending Tasks</Text>
-                    <Text style={styles.widgetSubtitle}>{tasks.length} tasks</Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={() => router.push('/(verticals)/freelancer/tasks')}>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-                </TouchableOpacity>
-              </LinearGradient>
-
-              <View style={styles.widgetContent}>
-                {tasks.map((task, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.widgetItem,
-                      index === tasks.length - 1 && styles.widgetItemLast
-                    ]}
-                  >
-                    <View style={[styles.widgetItemIcon, { backgroundColor: '#FCE7F3' }]}>
-                      <Ionicons name="list" size={16} color="#EC4899" />
-                    </View>
-                    <View style={styles.widgetItemContent}>
-                      <Text style={styles.widgetItemTitle}>{task.title}</Text>
-                      <Text style={styles.widgetItemSubtitle}>Due: {task.due_date}</Text>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: task.priority === 'urgent' ? '#FEE2E2' : '#F3F4F6' }]}>
-                      <Text style={[styles.statusText, { color: task.priority === 'urgent' ? '#EF4444' : '#6B7280' }]}>
-                        {task.priority}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
         </View>
 
+        {/* Earnings Widget */}
+        <EarningsWidget />
       </ScrollView>
     </View>
   )
@@ -327,10 +314,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4B5563',
   },
-  bottomWidgets: {
+  activeProjectsContainer: {
     paddingHorizontal: 24,
-    marginTop: 24,
-    gap: 24,
+    marginTop: 15,
+    marginBottom: 40,
   },
   widgetWithShadow: {
     borderRadius: 20,

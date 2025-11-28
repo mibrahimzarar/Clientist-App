@@ -8,50 +8,44 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useFreelancerReminders, useFreelancerMeetings, useFreelancerLeads } from '../../hooks/useFreelancer'
-import { FreelancerReminder, FreelancerMeeting, FreelancerLead } from '../../types/freelancer'
+import { useFreelancerTasks, useFreelancerLeads, useFreelancerInvoices } from '../../../hooks/useFreelancer'
 
 export function SmartRemindersWidget() {
-    const { data: remindersData } = useFreelancerReminders()
-    const { data: meetingsData } = useFreelancerMeetings()
+    const { data: tasksData } = useFreelancerTasks()
     const { data: leadsData } = useFreelancerLeads()
+    const { data: invoicesData } = useFreelancerInvoices()
 
-    const reminders = remindersData?.data || []
-    const meetings = meetingsData?.data || []
+    const tasks = tasksData?.data || []
     const leads = leadsData?.data || []
+    const invoices = invoicesData?.data || []
 
     // Combine and sort all items by date
     const allItems = [
-        ...reminders.map(r => ({ ...r, itemType: 'reminder' as const, date: r.due_date })),
-        ...meetings.map(m => ({ ...m, itemType: 'meeting' as const, date: m.start_time })),
-        ...leads.filter(l => l.next_follow_up).map(l => ({ ...l, itemType: 'lead' as const, date: l.next_follow_up! }))
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        ...tasks.map(t => ({ ...t, itemType: 'task' as const, date: t.due_date, title: t.title })),
+        ...leads.filter(l => l.next_follow_up).map(l => ({ ...l, itemType: 'lead' as const, date: l.next_follow_up!, title: l.full_name })),
+        ...invoices.map(i => ({ ...i, itemType: 'invoice' as const, date: i.due_date, title: `Invoice #${i.invoice_number}` }))
+    ].filter((item): item is any => item && item.date != null).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .slice(0, 5) // Show top 5
 
-    const getIcon = (type: string, itemType: string) => {
-        if (itemType === 'meeting') return 'videocam'
+    const getIcon = (itemType: string) => {
+        if (itemType === 'task') return 'checkbox'
         if (itemType === 'lead') return 'person-add'
-
-        switch (type) {
-            case 'follow_up': return 'chatbubble-ellipses'
-            case 'contract_expiry': return 'document-text'
-            case 'payment': return 'card'
-            case 'automation_ping': return 'pulse'
-            default: return 'alarm'
-        }
+        if (itemType === 'invoice') return 'receipt'
+        return 'alarm'
     }
 
-    const getColor = (type: string, itemType: string) => {
-        if (itemType === 'meeting') return '#3B82F6'
+    const getColor = (itemType: string) => {
+        if (itemType === 'task') return '#EC4899'
         if (itemType === 'lead') return '#F59E0B'
+        if (itemType === 'invoice') return '#10B981'
+        return '#6B7280'
+    }
 
-        switch (type) {
-            case 'follow_up': return '#8B5CF6'
-            case 'contract_expiry': return '#EF4444'
-            case 'payment': return '#10B981'
-            case 'automation_ping': return '#6366F1'
-            default: return '#6B7280'
-        }
+    const getLabel = (itemType: string) => {
+        if (itemType === 'task') return 'Task'
+        if (itemType === 'lead') return 'Lead Follow-up'
+        if (itemType === 'invoice') return 'Invoice Due'
+        return 'Reminder'
     }
 
     const formatDate = (dateString: string) => {
@@ -73,16 +67,14 @@ export function SmartRemindersWidget() {
                         <Ionicons name="flash" size={20} color="#F59E0B" />
                         <Text style={styles.title}>Smart Reminders</Text>
                     </View>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAll}>See All</Text>
-                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.list}>
                     {allItems.map((item, index) => {
-                        const icon = getIcon((item as any).type, item.itemType)
-                        const color = getColor((item as any).type, item.itemType)
-                        const isOverdue = new Date(item.date) < new Date() && item.date.split('T')[0] !== new Date().toISOString().split('T')[0]
+                        const icon = getIcon(item.itemType)
+                        const color = getColor(item.itemType)
+                        const dateStr = item.date || ''
+                        const isOverdue = dateStr && new Date(dateStr) < new Date() && dateStr.split('T')[0] !== new Date().toISOString().split('T')[0]
 
                         return (
                             <TouchableOpacity key={index} style={styles.item}>
@@ -91,17 +83,15 @@ export function SmartRemindersWidget() {
                                 </View>
                                 <View style={styles.content}>
                                     <Text style={styles.itemTitle} numberOfLines={1}>
-                                        {(item as any).title || (item as any).full_name}
+                                        {item.title}
                                     </Text>
                                     <Text style={styles.itemSubtitle}>
-                                        {item.itemType === 'meeting' ? 'Meeting' :
-                                            item.itemType === 'lead' ? 'Lead Follow-up' :
-                                                ((item as any).type?.replace('_', ' ') || 'Reminder')}
+                                        {getLabel(item.itemType)}
                                     </Text>
                                 </View>
                                 <View style={[styles.dateBadge, isOverdue && styles.overdueBadge]}>
                                     <Text style={[styles.dateText, isOverdue && styles.overdueText]}>
-                                        {formatDate(item.date)}
+                                        {formatDate(dateStr)}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
@@ -109,7 +99,7 @@ export function SmartRemindersWidget() {
                     })}
                     {allItems.length === 0 && (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>No upcoming reminders</Text>
+                            <Text style={styles.emptyText}>No upcoming items</Text>
                         </View>
                     )}
                 </View>

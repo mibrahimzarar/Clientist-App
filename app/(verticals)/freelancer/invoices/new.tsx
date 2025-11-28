@@ -11,20 +11,24 @@ import {
     Modal,
     FlatList
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useCreateInvoice, useFreelancerClients } from '../../../../src/hooks/useFreelancer'
+import { useCreateInvoice, useFreelancerClients, useFreelancerProjects } from '../../../../src/hooks/useFreelancer'
 import { DatePickerInput } from '../../../../src/components/ui/DatePickerInput'
 import { FreelancerInvoiceItem, InvoiceStatus } from '../../../../src/types/freelancer'
 
 export default function NewInvoicePage() {
+    const { projectId } = useLocalSearchParams()
     const { data: clientsData } = useFreelancerClients()
+    const { data: projectsData } = useFreelancerProjects()
     const clients = clientsData?.data?.data || []
+    const projects = projectsData?.data?.data || []
     const createInvoiceMutation = useCreateInvoice()
 
     const [formData, setFormData] = useState({
         client_id: '',
+        project_id: projectId ? (projectId as string) : '',
         invoice_number: `INV-${Date.now().toString().slice(-6)}`,
         issue_date: new Date().toISOString().split('T')[0],
         due_date: '',
@@ -38,7 +42,9 @@ export default function NewInvoicePage() {
     ])
 
     const [showClientPicker, setShowClientPicker] = useState(false)
+    const [showProjectPicker, setShowProjectPicker] = useState(false)
     const [selectedClientName, setSelectedClientName] = useState('')
+    const [selectedProjectName, setSelectedProjectName] = useState('')
 
     const calculateTotals = () => {
         const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0)
@@ -92,12 +98,28 @@ export default function NewInvoicePage() {
         const totals = calculateTotals()
 
         try {
+            // Build invoice object, only include project_id if it has a value
+            const invoiceData: any = {
+                client_id: formData.client_id,
+                invoice_number: formData.invoice_number,
+                issue_date: formData.issue_date,
+                due_date: formData.due_date,
+                status: formData.status,
+                currency: formData.currency,
+                notes: formData.notes,
+                subtotal: totals.subtotal,
+                total_amount: totals.total
+            }
+            
+            // Only add project_id if it has a non-empty value
+            if (formData.project_id && formData.project_id.trim()) {
+                invoiceData.project_id = formData.project_id
+            }
+            
+            console.log('Creating invoice with data:', invoiceData)
+            
             await createInvoiceMutation.mutateAsync({
-                invoice: {
-                    ...formData,
-                    subtotal: totals.subtotal,
-                    total_amount: totals.total
-                },
+                invoice: invoiceData,
                 items
             })
             Alert.alert('Success', 'Invoice created successfully', [
@@ -138,6 +160,19 @@ export default function NewInvoicePage() {
                         >
                             <Text style={[styles.selectButtonText, !selectedClientName && styles.placeholderText]}>
                                 {selectedClientName || 'Select Client'}
+                            </Text>
+                            <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Project (Optional)</Text>
+                        <TouchableOpacity
+                            style={styles.selectButton}
+                            onPress={() => setShowProjectPicker(true)}
+                        >
+                            <Text style={[styles.selectButtonText, !selectedProjectName && styles.placeholderText]}>
+                                {selectedProjectName || 'Select Project'}
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#6B7280" />
                         </TouchableOpacity>
@@ -296,6 +331,53 @@ export default function NewInvoicePage() {
                                     )}
                                 </TouchableOpacity>
                             )}
+                        />
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showProjectPicker}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowProjectPicker(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Project</Text>
+                            <TouchableOpacity onPress={() => setShowProjectPicker(false)}>
+                                <Ionicons name="close" size={24} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={projects}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.clientItem}
+                                    onPress={() => {
+                                        setFormData({ ...formData, project_id: item.id })
+                                        setSelectedProjectName(item.title)
+                                        setShowProjectPicker(false)
+                                    }}
+                                >
+                                    <View>
+                                        <Text style={styles.clientName}>{item.title}</Text>
+                                        {item.client?.full_name && (
+                                            <Text style={styles.companyName}>{item.client.full_name}</Text>
+                                        )}
+                                    </View>
+                                    {formData.project_id === item.id && (
+                                        <Ionicons name="checkmark" size={20} color="#8B5CF6" />
+                                    )}
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={
+                                <View style={styles.emptyListContainer}>
+                                    <Text style={styles.emptyListText}>No projects available</Text>
+                                </View>
+                            }
                         />
                     </View>
                 </View>
@@ -510,6 +592,15 @@ const styles = StyleSheet.create({
     },
     companyName: {
         fontSize: 14,
+        color: '#6B7280',
+    },
+    emptyListContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
+    },
+    emptyListText: {
+        fontSize: 16,
         color: '#6B7280',
     },
 })

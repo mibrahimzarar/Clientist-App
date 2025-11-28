@@ -6,7 +6,7 @@ import { router } from 'expo-router'
 
 interface Notification {
   id: string
-  type: 'trip' | 'task' | 'lead'
+  type: 'trip' | 'task' | 'lead' | 'invoice'
   title: string
   subtitle: string
   count?: number
@@ -37,6 +37,7 @@ export default function TopStatsWidget({
       case 'trip': return 'airplane'
       case 'task': return 'checkbox'
       case 'lead': return 'person-add'
+      case 'invoice': return 'receipt'
       default: return 'notifications'
     }
   }
@@ -44,8 +45,9 @@ export default function TopStatsWidget({
   const getNotificationColor = (type: string): [string, string] => {
     switch (type) {
       case 'trip': return ['#10B981', '#059669']
-      case 'task': return ['#ba509eff', '#ae0e83ff']
-      case 'lead': return ['#6366F1', '#4F46E5']
+      case 'task': return ['#EC4899', '#DB2777']
+      case 'lead': return ['#F59E0B', '#D97706']
+      case 'invoice': return ['#10B981', '#059669']
       default: return ['#6B7280', '#4B5563']
     }
   }
@@ -65,10 +67,10 @@ export default function TopStatsWidget({
           <View style={styles.topSection}>
             <View style={styles.mainStats}>
               <View style={styles.clientIconContainer}>
-                <Ionicons name="people" size={32} color="#fff" />
+                <Ionicons name="briefcase" size={32} color="#fff" />
               </View>
               <View style={styles.mainStatsContent}>
-                <Text style={styles.mainLabel}>Total Clients</Text>
+                <Text style={styles.mainLabel}>Total Projects</Text>
                 <Text style={styles.mainNumber}>{totalClients}</Text>
               </View>
             </View>

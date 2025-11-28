@@ -8,8 +8,8 @@ import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CalendarWidget } from '../calendar/CalendarWidget'
-import TopStatsWidget from '../dashboard/TopStatsWidget'
+import { TravelAgentCalendarWidget } from '../widgets/travelAgent/TravelAgentCalendarWidget'
+import TopStatsWidget from '../widgets/travelAgent/TopStatsWidget'
 
 const { width } = Dimensions.get('window')
 
@@ -212,7 +212,7 @@ export default function TravelAgentDashboard() {
                 </ScrollView>
 
                 {/* Calendar Widget */}
-                <CalendarWidget />
+                <TravelAgentCalendarWidget />
 
                 {/* Recent Clients Widget */}
                 <View style={styles.sectionHeader}>
