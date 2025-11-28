@@ -50,6 +50,7 @@ export default function TopStatsWidget({
     }
   }
 
+  // Top Stats Widget - Updated to fix text rendering
   return (
     <View style={styles.container}>
       {/* Main Stats Card */}
@@ -71,7 +72,7 @@ export default function TopStatsWidget({
                 <Text style={styles.mainNumber}>{totalClients}</Text>
               </View>
             </View>
-            
+
             {urgentTasks > 0 && (
               <View style={styles.urgentBadge}>
                 <Ionicons name="alert-circle" size={16} color="#fff" />
@@ -82,8 +83,6 @@ export default function TopStatsWidget({
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
-            
-            
             <View style={styles.statItem}>
               <View style={styles.statIconContainer}>
                 <Ionicons name="checkmark-circle" size={18} color="#34D399" />
@@ -93,15 +92,14 @@ export default function TopStatsWidget({
                 <Text style={styles.statLabel}>Completed</Text>
               </View>
             </View>
-            
-            
+
             <View style={styles.statItem}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="trending-up" size={18} color="#60A5WA" />
+                <Ionicons name="trending-up" size={18} color="#60A5FA" />
               </View>
               <View>
                 <Text style={styles.statNumber}>
-                  {totalClients > 0 ? Math.round((completedClients / totalClients) * 100) : 0}%
+                  {totalClients > 0 ? `${Math.round((completedClients / totalClients) * 100)}%` : '0%'}
                 </Text>
                 <Text style={styles.statLabel}>Success</Text>
               </View>
@@ -118,11 +116,7 @@ export default function TopStatsWidget({
               <Ionicons name="time" size={18} color="#6366F1" />
               <Text style={styles.notificationHeaderText}>Today's Schedule</Text>
             </View>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>{notifications.length}</Text>
-            </View>
           </View>
-
           <View style={styles.notificationsList}>
             {notifications.map((notification, index) => {
               const colors = getNotificationColor(notification.type)
@@ -134,36 +128,30 @@ export default function TopStatsWidget({
                     index === notifications.length - 1 && styles.notificationCardLast
                   ]}
                   onPress={() => router.push(notification.route as any)}
-                  activeOpacity={0.7}
-                >
+                  activeOpacity={0.7}>
                   <LinearGradient
                     colors={[...colors, colors[1]]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={styles.notificationGradient}
-                  >
+                    style={styles.notificationGradient}>
                     <View style={styles.notificationIconContainer}>
-                      <Ionicons 
-                        name={getNotificationIcon(notification.type) as any} 
-                        size={20} 
-                        color="#fff" 
-                      />
+                      <Ionicons
+                        name={getNotificationIcon(notification.type) as any}
+                        size={20}
+                        color="#fff" />
                     </View>
                   </LinearGradient>
-
                   <View style={styles.notificationContent}>
                     <Text style={styles.notificationTitle}>{notification.title}</Text>
                     <Text style={styles.notificationSubtitle}>{notification.subtitle}</Text>
                   </View>
-
-                  {notification.count && notification.count > 1 && (
+                  {(notification.count !== undefined && notification.count > 1) ? (
                     <View style={[styles.countBadge, { backgroundColor: `${colors[0]}20` }]}>
                       <Text style={[styles.countBadgeText, { color: colors[0] }]}>
-                        {notification.count}
+                        {notification.count.toString()}
                       </Text>
                     </View>
-                  )}
-
+                  ) : null}
                   <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
                 </TouchableOpacity>
               )

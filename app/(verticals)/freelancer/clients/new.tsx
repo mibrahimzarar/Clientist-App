@@ -2,127 +2,222 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
+  ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useCreateClient } from '../../../../src/hooks/useTravelAgent'
-import { PackageType, LeadSource, ClientStatus, PriorityTag } from '../../../../src/types/travelAgent'
+import { LinearGradient } from 'expo-linear-gradient'
+import * as ImagePicker from 'expo-image-picker'
+import { useCreateClient } from '../../../../src/hooks/useFreelancer'
+import { FreelancerClientStatus } from '../../../../src/types/freelancer'
+import { freelancerService } from '../../../../src/services/freelancerService'
 
-export default function NewClient() {
+export default function NewClientPage() {
   const [formData, setFormData] = useState({
     full_name: '',
-    phone_number: '',
+    company_name: '',
+    role: '',
     email: '',
+    phone_number: '',
     country: '',
-    package_type: 'tourist_visa' as PackageType, // Default to tourist visa for freelancer
-    lead_source: 'referral' as LeadSource, // Default to referral for freelancer
-    status: 'new' as ClientStatus,
-    priority_tag: 'normal' as PriorityTag,
+    profile_picture_url: '',
+    status: 'active' as FreelancerClientStatus,
+    tags: '',
     notes: '',
   })
+  const [uploading, setUploading] = useState(false)
 
-  const createClient = useCreateClient()
+  const createClientMutation = useCreateClient()
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled) {
+        setUploading(true)
+        try {
+          const publicUrl = await freelancerService.uploadImage(result.assets[0].uri, 'avatars')
+          setFormData({ ...formData, profile_picture_url: publicUrl })
+        } catch (error) {
+          Alert.alert('Error', 'Failed to upload image')
+        } finally {
+          setUploading(false)
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image')
+    }
+  }
 
   const handleSubmit = async () => {
-    if (!formData.full_name.trim() || !formData.phone_number.trim() || !formData.country.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields')
+    if (!formData.full_name) {
+      Alert.alert('Error', 'Full Name is required')
       return
     }
 
     try {
-      await createClient.mutateAsync(formData)
+      await createClientMutation.mutateAsync({
+        ...formData,
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+      })
       Alert.alert('Success', 'Client created successfully', [
         { text: 'OK', onPress: () => router.back() }
       ])
     } catch (error) {
       Alert.alert('Error', 'Failed to create client')
+      console.error(error)
     }
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#8B5CF6', '#7C3AED']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>New Client</Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
+
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.formCard}>
+          {/* Image Picker */}
+          <View style={styles.imageContainer}>
+            <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+              {formData.profile_picture_url ? (
+                <Image source={{ uri: formData.profile_picture_url }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.placeholderImage}>
+                  <Ionicons name="camera" size={32} color="#9CA3AF" />
+                  <Text style={styles.placeholderText}>Add Photo</Text>
+                </View>
+              )}
+              {uploading && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator color="#fff" />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.full_name}
+              onChangeText={(text) => setFormData({ ...formData, full_name: text })}
+              placeholder="e.g. John Doe"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Company Name</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.company_name}
+              onChangeText={(text) => setFormData({ ...formData, company_name: text })}
+              placeholder="e.g. Acme Corp"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Role</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.role}
+              onChangeText={(text) => setFormData({ ...formData, role: text })}
+              placeholder="e.g. CEO"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.email}
+              onChangeText={(text) => setFormData({ ...formData, email: text })}
+              placeholder="e.g. john@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.phone_number}
+              onChangeText={(text) => setFormData({ ...formData, phone_number: text })}
+              placeholder="e.g. +1 234 567 890"
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Country</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.country}
+              onChangeText={(text) => setFormData({ ...formData, country: text })}
+              placeholder="e.g. USA"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tags (comma separated)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.tags}
+              onChangeText={(text) => setFormData({ ...formData, tags: text })}
+              placeholder="e.g. VIP, Referral"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Notes</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={formData.notes}
+              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              placeholder="Add notes..."
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={createClientMutation.isPending || uploading}
+        >
+          {createClientMutation.isPending ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitButtonText}>Create Client</Text>
+          )}
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Client</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <View style={styles.formContainer}>
-        <Text style={styles.sectionTitle}>Basic Information</Text>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.full_name}
-            onChangeText={(text) => setFormData({ ...formData, full_name: text })}
-            placeholder="Enter client's full name"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.phone_number}
-            onChangeText={(text) => setFormData({ ...formData, phone_number: text })}
-            placeholder="Enter phone number"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData({ ...formData, email: text })}
-            placeholder="Enter email address"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="email-address"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Country <Text style={styles.required}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            value={formData.country}
-            onChangeText={(text) => setFormData({ ...formData, country: text })}
-            placeholder="Enter country"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
-
-        <Text style={styles.sectionTitle}>Additional Information</Text>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.notes}
-            onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            placeholder="Add any additional notes..."
-            placeholderTextColor="#9CA3AF"
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Create Client</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
@@ -132,74 +227,112 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    justifyContent: 'space-between',
   },
   backButton: {
     padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
+    color: '#fff',
   },
-  formContainer: {
-    padding: 24,
+  content: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 24,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  imagePicker: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderImage: {
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputGroup: {
     marginBottom: 16,
-    marginTop: 24,
-  },
-  inputContainer: {
-    marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
-  required: {
-    color: '#EF4444',
-  },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     color: '#111827',
   },
   textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+    minHeight: 100,
   },
   submitButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#8B5CF6',
     borderRadius: 12,
     paddingVertical: 16,
-    paddingHorizontal: 24,
     alignItems: 'center',
-    marginTop: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#fff',
   },
 })
