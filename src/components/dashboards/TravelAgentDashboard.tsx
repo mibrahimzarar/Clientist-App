@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
-import { useDashboardSummary, useClientAnalytics, useClients } from '../../hooks/useTravelAgent'
+import { useDashboardSummary, useClientAnalytics, useClients, useUpcomingTravels, usePendingTasks } from '../../hooks/useTravelAgent'
 import { useTodaysFollowUps, useLeadStatistics } from '../../hooks/useLeads'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../lib/supabase'
@@ -22,14 +22,56 @@ export default function TravelAgentDashboard() {
     const { data: clientsData, refetch: refetchClients } = useClients(1, 10)
     const { data: todaysFollowUpsData } = useTodaysFollowUps()
     const { data: leadStatsData } = useLeadStatistics()
+    const { data: travelsData } = useUpcomingTravels(100)
+    const { data: tasksData } = usePendingTasks(100)
     const [companyLogo, setCompanyLogo] = useState<string | null>(null)
 
     const clients = clientsData?.data?.data || []
     const todaysFollowUps = todaysFollowUpsData?.data || []
     const leadStats = leadStatsData?.data
+    const travels = travelsData?.data || []
+    const tasks = tasksData?.data || []
 
     // Prepare notifications for the widget
     const todaysNotifications = []
+
+    // Check for today's tasks
+    const todayTaskCount = tasks?.filter(t => {
+        if (!t.due_date) return false
+        const taskDate = new Date(t.due_date).toDateString()
+        const today = new Date().toDateString()
+        return taskDate === today
+    }).length || 0
+    
+    if (todayTaskCount > 0) {
+        todaysNotifications.push({
+            id: 'tasks',
+            type: 'task' as const,
+            title: 'Tasks Due Today',
+            subtitle: `${todayTaskCount} task${todayTaskCount > 1 ? 's' : ''}`,
+            count: todayTaskCount,
+            route: '/(verticals)/travel-agent/tasks'
+        })
+    }
+
+    // Check for today's travels
+    const todayTravelCount = travels?.filter(t => {
+        if (!t.departure_date) return false
+        const travelDate = new Date(t.departure_date).toDateString()
+        const today = new Date().toDateString()
+        return travelDate === today
+    }).length || 0
+    
+    if (todayTravelCount > 0) {
+        todaysNotifications.push({
+            id: 'travels',
+            type: 'trip' as const,
+            title: 'Trips Today',
+            subtitle: `${todayTravelCount} trip${todayTravelCount > 1 ? 's' : ''}`,
+            count: todayTravelCount,
+            route: '/(verticals)/travel-agent/trips'
+        })
+    }
 
     // Add lead follow-up notifications
     if (todaysFollowUps.length > 0) {
