@@ -766,10 +766,14 @@ export async function getPendingTasks(limit: number = 10): Promise<ApiResponse<P
 // Get earnings for a client
 export async function getClientEarnings(clientId: string): Promise<ApiResponse<ClientEarning[]>> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('client_earnings')
       .select('*')
       .eq('client_id', clientId)
+      .eq('user_id', user.id)
       .order('earned_date', { ascending: false })
 
     if (error) throw error
@@ -789,9 +793,13 @@ export async function getClientEarnings(clientId: string): Promise<ApiResponse<C
 // Add earning for a client
 export async function addClientEarning(clientId: string, earningData: EarningFormData): Promise<ApiResponse<ClientEarning>> {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
     const { data, error } = await supabase
       .from('client_earnings')
       .insert([{
+        user_id: user.id,
         client_id: clientId,
         amount: earningData.amount,
         currency: earningData.currency || '',

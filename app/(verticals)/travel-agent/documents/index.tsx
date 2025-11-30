@@ -14,7 +14,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { getAllDocuments, deleteClientDocument } from '../../../../src/api/documents'
+import { getAllDocuments, deleteClientDocument, getLocalDocuments, deleteLocalDocument } from '../../../../src/api/documents'
 import { supabase } from '../../../../src/lib/supabase'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { ClientDocument } from '../../../../src/types/documents'
@@ -51,7 +51,8 @@ export default function DocumentsPage() {
 
     const fetchDocuments = async () => {
         try {
-            const { data, error } = await getAllDocuments()
+            // Use local storage instead of database for travel agent
+            const { data, error } = await getLocalDocuments()
             if (error) throw error
             setDocuments(data || [])
         } catch (error) {
@@ -114,7 +115,8 @@ export default function DocumentsPage() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await deleteClientDocument(doc.id, doc.file_path)
+                            // Use local storage delete
+                            await deleteLocalDocument(doc.id)
                             await fetchDocuments()
                         } catch (error) {
                             console.error('Error deleting document:', error)
@@ -239,42 +241,52 @@ export default function DocumentsPage() {
                         )}
                     </View>
                 ) : (
-                    filteredDocuments.map((doc) => (
-                        <TouchableOpacity
-                            key={doc.id}
-                            style={styles.docCard}
-                            onPress={() => handleOpenDocument(doc.url)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.docIconContainer}>
-                                {doc.file_type.startsWith('image/') && doc.url ? (
-                                    <Image source={{ uri: doc.url }} style={styles.docPreview} />
-                                ) : (
-                                    <Ionicons name={getIcon(doc)} size={24} color="#8B5CF6" />
-                                )}
-                            </View>
-
-                            <View style={styles.docContent}>
-                                <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
-                                <Text style={styles.docClient}>{doc.client?.full_name || 'Unknown Client'}</Text>
-                                <View style={styles.docMeta}>
-                                    <View style={styles.docTypeBadge}>
-                                        <Text style={styles.docTypeText}>{doc.type.replace('_', ' ')}</Text>
-                                    </View>
-                                    <Text style={styles.docDate}>
-                                        {new Date(doc.created_at).toLocaleDateString()}
-                                    </Text>
-                                </View>
-                            </View>
-
+                    <>
+                        {filteredDocuments.map((doc) => (
                             <TouchableOpacity
-                                style={styles.deleteButton}
-                                onPress={() => handleDeleteDocument(doc)}
+                                key={doc.id}
+                                style={styles.docCard}
+                                onPress={() => handleOpenDocument(doc.url)}
+                                activeOpacity={0.7}
                             >
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                <View style={styles.docIconContainer}>
+                                    {doc.file_type.startsWith('image/') && doc.url ? (
+                                        <Image source={{ uri: doc.url }} style={styles.docPreview} />
+                                    ) : (
+                                        <Ionicons name={getIcon(doc)} size={24} color="#8B5CF6" />
+                                    )}
+                                </View>
+
+                                <View style={styles.docContent}>
+                                    <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                                    <Text style={styles.docClient}>{doc.client?.full_name || 'Unknown Client'}</Text>
+                                    <View style={styles.docMeta}>
+                                        <View style={styles.docTypeBadge}>
+                                            <Text style={styles.docTypeText}>{doc.type.replace('_', ' ')}</Text>
+                                        </View>
+                                        <Text style={styles.docDate}>
+                                            {new Date(doc.created_at).toLocaleDateString()}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeleteDocument(doc)}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                </TouchableOpacity>
                             </TouchableOpacity>
-                        </TouchableOpacity>
-                    ))
+                        ))}
+
+                        {/* Storage Info Note */}
+                        <View style={styles.storageNote}>
+                            <Ionicons name="information-circle" size={20} color="#6B7280" />
+                            <Text style={styles.storageNoteText}>
+                                Documents are stored locally on your device to minimize storage usage. They will be available only on this device.
+                            </Text>
+                        </View>
+                    </>
                 )}
             </ScrollView>
 
@@ -320,6 +332,8 @@ export default function DocumentsPage() {
                 visible={showUploadModal}
                 onClose={() => setShowUploadModal(false)}
                 clientId={selectedClientId}
+                onUploadComplete={handleUploadComplete}
+                useLocalStorage={true}
             />
         </View>
     )
@@ -558,5 +572,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#111827',
         fontWeight: '500',
+    },
+    storageNote: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 16,
+        marginBottom: 8,
+        gap: 12,
+    },
+    storageNoteText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#6B7280',
+        lineHeight: 18,
     },
 })

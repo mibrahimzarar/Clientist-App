@@ -14,11 +14,15 @@ import * as DocumentPicker from 'expo-document-picker'
 import { DocumentType } from '../../types/documents'
 import { useUploadDocument } from '../../hooks/useDocuments'
 import { BouncingBallsLoader } from '../ui/BouncingBallsLoader'
+import { uploadLocalDocument } from '../../api/documents'
+import { supabase } from '../../lib/supabase'
 
 interface UploadModalProps {
     visible: boolean
     onClose: () => void
     clientId: string
+    onUploadComplete?: () => void
+    useLocalStorage?: boolean
 }
 
 const DOCUMENT_TYPES: { type: DocumentType; label: string; icon: any }[] = [
@@ -31,10 +35,40 @@ const DOCUMENT_TYPES: { type: DocumentType; label: string; icon: any }[] = [
     { type: 'other', label: 'Other Document', icon: 'document-outline' },
 ]
 
-export const UploadModal: React.FC<UploadModalProps> = ({ visible, onClose, clientId }) => {
+export const UploadModal: React.FC<UploadModalProps> = ({ 
+    visible, 
+    onClose, 
+    clientId, 
+    onUploadComplete,
+    useLocalStorage = false 
+}) => {
     const [selectedType, setSelectedType] = useState<DocumentType | null>(null)
     const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null)
+    const [isUploading, setIsUploading] = useState(false)
+    const [clients, setClients] = useState<Array<{ id: string; full_name: string }>>([])
     const uploadMutation = useUploadDocument()
+
+    // Fetch client name for local storage
+    React.useEffect(() => {
+        if (useLocalStorage && clientId) {
+            fetchClientName()
+        }
+    }, [clientId, useLocalStorage])
+
+    const fetchClientName = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('id, full_name')
+                .eq('id', clientId)
+                .single()
+
+            if (error) throw error
+            setClients(data ? [data] : [])
+        } catch (error) {
+            console.error('Error fetching client:', error)
+        }
+    }
 
     const handlePickDocument = async () => {
         try {
@@ -55,21 +89,49 @@ export const UploadModal: React.FC<UploadModalProps> = ({ visible, onClose, clie
         if (!selectedFile || !selectedType) return
 
         try {
-            await uploadMutation.mutateAsync({
-                clientId,
-                fileUri: selectedFile.uri,
-                fileName: selectedFile.name,
-                fileType: selectedFile.mimeType || 'application/octet-stream',
-                docType: selectedType,
-            })
+            setIsUploading(true)
+
+            if (useLocalStorage) {
+                // Use local storage
+                const clientName = clients.find(c => c.id === clientId)?.full_name || 'Unknown Client'
+                const result = await uploadLocalDocument(
+                    clientId,
+                    selectedFile.uri,
+                    selectedFile.name,
+                    selectedFile.mimeType || 'application/octet-stream',
+                    selectedType,
+                    clientName
+                )
+                
+                if (result.error) {
+                    throw new Error(typeof result.error === 'string' ? result.error : 'Failed to upload document')
+                }
+            } else {
+                // Use database storage
+                await uploadMutation.mutateAsync({
+                    clientId,
+                    fileUri: selectedFile.uri,
+                    fileName: selectedFile.name,
+                    fileType: selectedFile.mimeType || 'application/octet-stream',
+                    docType: selectedType,
+                })
+            }
 
             // Reset and close
             setSelectedFile(null)
             setSelectedType(null)
-            onClose()
             Alert.alert('Success', 'Document uploaded successfully')
-        } catch (error) {
-            Alert.alert('Error', 'Failed to upload document')
+            
+            if (onUploadComplete) {
+                onUploadComplete()
+            }
+            onClose()
+        } catch (error: any) {
+            console.error('Upload error:', error)
+            const errorMessage = error?.message || 'Failed to upload document'
+            Alert.alert('Upload Error', errorMessage)
+        } finally {
+            setIsUploading(false)
         }
     }
 
@@ -134,7 +196,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({ visible, onClose, clie
                                 <>
                                     <Ionicons name="cloud-upload-outline" size={32} color="#9CA3AF" />
                                     <Text style={styles.uploadText}>Tap to select file</Text>
-                                    <Text style={styles.uploadSubtext}>PDF, JPG, PNG up to 10MB</Text>
+                                    <Text style={styles.uploadSubtext}>
+                                        {useLocalStorage ? 'PDF, JPG, PNG up to 5MB' : 'PDF, JPG, PNG up to 10MB'}
+                                    </Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -144,13 +208,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({ visible, onClose, clie
                         <TouchableOpacity
                             style={[
                                 styles.uploadButton,
-                                (!selectedType || !selectedFile || uploadMutation.isPending) &&
+                                (!selectedType || !selectedFile || isUploading) &&
                                 styles.uploadButtonDisabled,
                             ]}
                             onPress={handleUpload}
-                            disabled={!selectedType || !selectedFile || uploadMutation.isPending}
+                            disabled={!selectedType || !selectedFile || isUploading}
                         >
-                            {uploadMutation.isPending ? (
+                            {isUploading ? (
                                 <BouncingBallsLoader color="#fff" size={8} />
                             ) : (
                                 <Text style={styles.uploadButtonText}>Upload Document</Text>

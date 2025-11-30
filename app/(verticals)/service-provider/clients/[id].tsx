@@ -1,522 +1,355 @@
-import React, { useState } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  RefreshControl,
-} from 'react-native'
+import React from 'react'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { useClient, useUpdateClient, useDeleteClient } from '../../../../src/hooks/useTravelAgent'
-import { TravelClient, ClientStatus, PackageType, PriorityTag } from '../../../../src/types/travelAgent'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useSPClient } from '../../../../src/hooks/useServiceProvider'
+import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 
-export default function ServiceProviderClientDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const [refreshing, setRefreshing] = useState(false)
-  const [showStatusPicker, setShowStatusPicker] = useState(false)
-  const [showPriorityPicker, setShowPriorityPicker] = useState(false)
+export default function ClientDetailsPage() {
+    const { id } = useLocalSearchParams<{ id: string }>()
+    const { data: clientData, isLoading } = useSPClient(id)
 
-  const { data: clientData, isLoading, error, refetch } = useClient(id!)
-  const updateClient = useUpdateClient()
-  const deleteClient = useDeleteClient()
+    const client = clientData?.data
 
-  const client = clientData?.data
-
-  const onRefresh = async () => {
-    setRefreshing(true)
-    await refetch()
-    setRefreshing(false)
-  }
-
-  const handleStatusChange = async (newStatus: ClientStatus) => {
-    try {
-      await updateClient.mutateAsync({ id: id!, data: { status: newStatus } })
-      setShowStatusPicker(false)
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update client status')
+    const handleCall = () => {
+        if (client?.phone_number) {
+            Linking.openURL(`tel:${client.phone_number}`)
+        }
     }
-  }
 
-  const handlePriorityChange = async (newPriority: PriorityTag) => {
-    try {
-      await updateClient.mutateAsync({ id: id!, data: { priority_tag: newPriority } })
-      setShowPriorityPicker(false)
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update client priority')
+    const handleWhatsApp = () => {
+        if (client?.whatsapp) {
+            Linking.openURL(`whatsapp://send?phone=${client.whatsapp}`)
+        }
     }
-  }
 
-  const handleDeleteClient = () => {
-    Alert.alert(
-      'Delete Client',
-      'Are you sure you want to delete this client? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteClient.mutateAsync(id!)
-              router.back()
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete client')
-            }
-          },
-        },
-      ]
-    )
-  }
-
-  const getStatusColor = (status: ClientStatus) => {
-    switch (status) {
-      case 'in_progress': return '#F59E0B'
-      case 'rejected': return '#DC2626'
-      case 'completed': return '#059669'
-      default: return '#6B7280'
+    const handleEmail = () => {
+        if (client?.email) {
+            Linking.openURL(`mailto:${client.email}`)
+        }
     }
-  }
 
-  const getPriorityColor = (priority: PriorityTag) => {
-    switch (priority) {
-      case 'urgent': return '#EF4444'
-      case 'priority': return '#F59E0B'
-      case 'vip': return '#8B5CF6'
-      default: return '#10B981'
-    }
-  }
-
-  const getPackageIcon = (packageType: PackageType) => {
-    switch (packageType) {
-      case 'umrah_package': return 'airplane'
-      case 'tourist_visa': return 'document'
-      case 'ticketing': return 'ticket'
-      case 'visit_visa': return 'briefcase'
-      default: return 'person'
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading client details...</Text>
-      </View>
-    )
-  }
-
-  if (error || !client) {
-    return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={48} color="#EF4444" />
-        <Text style={styles.errorTitle}>Error loading client</Text>
-        <Text style={styles.errorText}>{error?.message || 'Client not found'}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    )
-  }
-
-  return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Client Details</Text>
-        <TouchableOpacity onPress={handleDeleteClient} style={styles.deleteButton}>
-          <Ionicons name="trash" size={24} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Client Info Card */}
-      <View style={styles.infoCard}>
-        <View style={styles.clientHeader}>
-          <View style={styles.clientBasicInfo}>
-            <Text style={styles.clientName}>{client.full_name}</Text>
-            <Text style={styles.clientPhone}>{client.phone_number}</Text>
-            {client.email && <Text style={styles.clientEmail}>{client.email}</Text>}
-          </View>
-          <View style={styles.clientBadges}>
-            <TouchableOpacity
-              style={[styles.statusBadge, { backgroundColor: getStatusColor(client.status) }]}
-              onPress={() => setShowStatusPicker(!showStatusPicker)}
-            >
-              <Text style={styles.badgeText}>{client.status.replace('_', ' ')}</Text>
-              <Ionicons name="chevron-down" size={12} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.priorityBadge, { backgroundColor: getPriorityColor(client.priority_tag) }]}
-              onPress={() => setShowPriorityPicker(!showPriorityPicker)}
-            >
-              <Text style={styles.badgeText}>{client.priority_tag}</Text>
-              <Ionicons name="chevron-down" size={12} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Status Picker */}
-        {showStatusPicker && (
-          <View style={styles.pickerContainer}>
-            {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={styles.pickerItem}
-                onPress={() => handleStatusChange(status)}
-              >
-                <Text style={styles.pickerText}>{status.replace('_', ' ')}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Priority Picker */}
-        {showPriorityPicker && (
-          <View style={styles.pickerContainer}>
-            {(['normal', 'priority', 'urgent', 'vip'] as PriorityTag[]).map((priority) => (
-              <TouchableOpacity
-                key={priority}
-                style={styles.pickerItem}
-                onPress={() => handlePriorityChange(priority)}
-              >
-                <Text style={styles.pickerText}>{priority}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.clientDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="location" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>{client.country}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name={getPackageIcon(client.package_type)} size={16} color="#6B7280" />
-            <Text style={styles.detailText}>{client.package_type.replace('_', ' ')}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="flag" size={16} color="#6B7280" />
-            <Text style={styles.detailText}>{client.lead_source.replace('_', ' ')}</Text>
-          </View>
-        </View>
-
-        {client.notes && (
-          <View style={styles.notesSection}>
-            <Text style={styles.notesLabel}>Notes:</Text>
-            <Text style={styles.notesText}>{client.notes}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.actionsSection}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push(`/(verticals)/service-provider/clients/${id}/services`)}
-          >
-            <Ionicons name="construct" size={24} color="#3B82F6" />
-            <Text style={styles.actionText}>Services</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push(`/(verticals)/service-provider/clients/${id}/bookings`)}
-          >
-            <Ionicons name="calendar" size={24} color="#F59E0B" />
-            <Text style={styles.actionText}>Bookings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push(`/(verticals)/service-provider/clients/${id}/payments`)}
-          >
-            <Ionicons name="card" size={24} color="#EF4444" />
-            <Text style={styles.actionText}>Payments</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push(`/(verticals)/service-provider/clients/${id}/reviews`)}
-          >
-            <Ionicons name="star" size={24} color="#10B981" />
-            <Text style={styles.actionText}>Reviews</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Client Timeline */}
-      <View style={styles.timelineSection}>
-        <Text style={styles.sectionTitle}>Timeline</Text>
-        <View style={styles.timelineContainer}>
-          <View style={styles.timelineItem}>
-            <View style={[styles.timelineDot, { backgroundColor: '#3B82F6' }]} />
-            <View style={styles.timelineContent}>
-              <Text style={styles.timelineTitle}>Client Created</Text>
-              <Text style={styles.timelineDate}>
-                {new Date(client.created_at).toLocaleDateString()}
-              </Text>
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <BouncingBallsLoader size={12} color="#3B82F6" />
             </View>
-          </View>
-          
-          {client.updated_at !== client.created_at && (
-            <View style={styles.timelineItem}>
-              <View style={[styles.timelineDot, { backgroundColor: '#F59E0B' }]} />
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineTitle}>Last Updated</Text>
-                <Text style={styles.timelineDate}>
-                  {new Date(client.updated_at).toLocaleDateString()}
-                </Text>
-              </View>
+        )
+    }
+
+    if (!client) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.errorText}>Client not found</Text>
             </View>
-          )}
+        )
+    }
+
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <LinearGradient
+                colors={['#3B82F6', '#2563EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.header}
+            >
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <View style={styles.headerContent}>
+                    <Text style={styles.headerTitle}>Client Details</Text>
+                </View>
+                <TouchableOpacity
+                    onPress={() => router.push(`/(verticals)/service-provider/clients/${id}/edit`)}
+                    style={styles.editButton}
+                >
+                    <Ionicons name="create-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+            </LinearGradient>
+
+            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+                {/* Client Info Card */}
+                <View style={styles.card}>
+                    <View style={styles.avatarContainer}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>
+                                {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </Text>
+                        </View>
+                        {client.is_vip && (
+                            <View style={styles.vipBadge}>
+                                <Ionicons name="star" size={16} color="#F59E0B" />
+                                <Text style={styles.vipText}>VIP</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <Text style={styles.clientName}>{client.full_name}</Text>
+                    <View style={styles.statusBadge}>
+                        <Text style={styles.statusText}>{client.status}</Text>
+                    </View>
+
+                    {/* Quick Actions */}
+                    <View style={styles.quickActions}>
+                        {client.phone_number && (
+                            <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
+                                <Ionicons name="call" size={20} color="#3B82F6" />
+                                <Text style={styles.actionText}>Call</Text>
+                            </TouchableOpacity>
+                        )}
+                        {client.whatsapp && (
+                            <TouchableOpacity style={styles.actionButton} onPress={handleWhatsApp}>
+                                <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
+                                <Text style={styles.actionText}>WhatsApp</Text>
+                            </TouchableOpacity>
+                        )}
+                        {client.email && (
+                            <TouchableOpacity style={styles.actionButton} onPress={handleEmail}>
+                                <Ionicons name="mail" size={20} color="#EF4444" />
+                                <Text style={styles.actionText}>Email</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
+                {/* Stats Card */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Statistics</Text>
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{client.total_jobs_completed}</Text>
+                            <Text style={styles.statLabel}>Jobs Completed</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>₨{client.total_spent.toLocaleString()}</Text>
+                            <Text style={styles.statLabel}>Total Spent</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statValue, client.outstanding_balance > 0 && styles.statValueRed]}>
+                                ₨{client.outstanding_balance.toLocaleString()}
+                            </Text>
+                            <Text style={styles.statLabel}>Outstanding</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Contact Information */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Contact Information</Text>
+                    {client.phone_number && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="call-outline" size={20} color="#6B7280" />
+                            <Text style={styles.infoText}>{client.phone_number}</Text>
+                        </View>
+                    )}
+                    {client.whatsapp && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="logo-whatsapp" size={20} color="#6B7280" />
+                            <Text style={styles.infoText}>{client.whatsapp}</Text>
+                        </View>
+                    )}
+                    {client.email && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="mail-outline" size={20} color="#6B7280" />
+                            <Text style={styles.infoText}>{client.email}</Text>
+                        </View>
+                    )}
+                    {client.address && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="location-outline" size={20} color="#6B7280" />
+                            <Text style={styles.infoText}>{client.address}</Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* Notes */}
+                {client.notes && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Notes</Text>
+                        <Text style={styles.notesText}>{client.notes}</Text>
+                    </View>
+                )}
+            </ScrollView>
         </View>
-      </View>
-    </ScrollView>
-  )
+    )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 48,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  retryButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    margin: 24,
-    marginBottom: 12,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  clientHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  clientBasicInfo: {
-    flex: 1,
-  },
-  clientName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  clientPhone: {
-    fontSize: 16,
-    color: '#374151',
-    marginBottom: 2,
-  },
-  clientEmail: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  clientBadges: {
-    alignItems: 'flex-end',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 8,
-  },
-  priorityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    marginRight: 4,
-  },
-  pickerContainer: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    marginTop: 8,
-    padding: 8,
-  },
-  pickerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  pickerText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  clientDetails: {
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  detailText: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginLeft: 12,
-  },
-  notesSection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  notesLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  notesText: {
-    fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 24,
-  },
-  actionsSection: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  actionButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    flex: 1,
-    minWidth: '45%',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginTop: 8,
-  },
-  timelineSection: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-  },
-  timelineContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-  },
-  timelineItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 16,
-  },
-  timelineContent: {
-    flex: 1,
-  },
-  timelineTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  timelineDate: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#6B7280',
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backButton: {
+        padding: 8,
+        marginRight: 12,
+    },
+    headerContent: {
+        flex: 1,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    editButton: {
+        padding: 8,
+    },
+    content: {
+        flex: 1,
+    },
+    contentContainer: {
+        padding: 20,
+    },
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    avatarContainer: {
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    avatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#3B82F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    avatarText: {
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    vipBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FEF3C7',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        gap: 4,
+    },
+    vipText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#F59E0B',
+    },
+    clientName: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#111827',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    statusBadge: {
+        alignSelf: 'center',
+        backgroundColor: '#DBEAFE',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        marginBottom: 20,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#3B82F6',
+        textTransform: 'capitalize',
+    },
+    quickActions: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    actionButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        padding: 12,
+    },
+    actionText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: 16,
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    statItem: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    statValueRed: {
+        color: '#EF4444',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 16,
+        color: '#111827',
+    },
+    notesText: {
+        fontSize: 15,
+        color: '#4B5563',
+        lineHeight: 22,
+    },
 })

@@ -7,7 +7,7 @@ import { router, Link } from 'expo-router'
 import { getSelectedVertical } from '../src/lib/verticalStorage'
 import { findVerticalById } from '../src/verticals'
 import FreelancerDashboard from '../src/components/dashboards/FreelancerDashboard'
-import ServiceProviderDashboard from '../src/components/dashboards/ServiceProviderDashboard'
+import { ServiceProviderDashboard } from '../src/components/dashboards/ServiceProviderDashboard'
 import TravelAgentDashboard from '../src/components/dashboards/TravelAgentDashboard'
 
 export default function Index() {

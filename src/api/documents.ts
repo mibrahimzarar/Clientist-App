@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase'
 import { ClientDocument, DocumentType } from '../types/documents'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as FileSystem from 'expo-file-system/legacy'
 
 export async function getClientDocuments(clientId: string) {
     try {
@@ -145,6 +147,114 @@ export async function deleteClientDocument(id: string, filePath: string) {
         return { error: null }
     } catch (error) {
         console.error('Error deleting document:', error)
+        return { error }
+    }
+}
+
+// ============ LOCAL STORAGE FUNCTIONS FOR TRAVEL AGENT ============
+
+const TRAVEL_AGENT_DOCS_KEY = 'travel_agent_documents'
+
+export async function getLocalDocuments() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('User not authenticated')
+
+        const storedData = await AsyncStorage.getItem(TRAVEL_AGENT_DOCS_KEY)
+        if (!storedData) return { data: [], error: null }
+
+        const allDocs = JSON.parse(storedData) as ClientDocument[]
+        // Filter by current user
+        const userDocs = allDocs.filter(doc => doc.created_by === user.id)
+
+        return { data: userDocs, error: null }
+    } catch (error) {
+        console.error('Error fetching local documents:', error)
+        return { data: null, error }
+    }
+}
+
+export async function uploadLocalDocument(
+    clientId: string,
+    fileUri: string,
+    fileName: string,
+    fileType: string,
+    docType: DocumentType,
+    clientName: string
+) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error('User not authenticated')
+
+        // Check file size first
+        const fileInfo = await FileSystem.getInfoAsync(fileUri)
+        if (!fileInfo.exists) {
+            throw new Error('File does not exist')
+        }
+
+        // Limit file size to 5MB for local storage to prevent app freezing
+        const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+        if (fileInfo.size && fileInfo.size > maxSize) {
+            throw new Error('File size exceeds 5MB limit for local storage')
+        }
+
+        // Read file as base64 (this can take time for large files)
+        const base64 = await FileSystem.readAsStringAsync(fileUri, {
+            encoding: 'base64',
+        })
+
+        // Create document object
+        const newDoc: ClientDocument & { client?: { full_name: string; id: string } } = {
+            id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            client_id: clientId,
+            name: fileName,
+            type: docType,
+            file_path: `data:${fileType};base64,${base64}`,
+            file_type: fileType,
+            size: fileInfo.size || base64.length,
+            created_at: new Date().toISOString(),
+            created_by: user.id,
+            url: `data:${fileType};base64,${base64}`,
+            client: {
+                full_name: clientName,
+                id: clientId,
+            },
+        }
+
+        // Get existing documents
+        const storedData = await AsyncStorage.getItem(TRAVEL_AGENT_DOCS_KEY)
+        const existingDocs = storedData ? JSON.parse(storedData) : []
+
+        // Add new document
+        existingDocs.push(newDoc)
+
+        // Save back to AsyncStorage (this can also take time for large data)
+        await AsyncStorage.setItem(TRAVEL_AGENT_DOCS_KEY, JSON.stringify(existingDocs))
+
+        return { data: newDoc, error: null }
+    } catch (error: any) {
+        console.error('Error uploading local document:', error)
+        return { data: null, error: error?.message || error }
+    }
+}
+
+export async function deleteLocalDocument(id: string) {
+    try {
+        // Get existing documents
+        const storedData = await AsyncStorage.getItem(TRAVEL_AGENT_DOCS_KEY)
+        if (!storedData) return { error: null }
+
+        const existingDocs = JSON.parse(storedData) as ClientDocument[]
+
+        // Filter out the document to delete
+        const updatedDocs = existingDocs.filter(doc => doc.id !== id)
+
+        // Save back to AsyncStorage
+        await AsyncStorage.setItem(TRAVEL_AGENT_DOCS_KEY, JSON.stringify(updatedDocs))
+
+        return { error: null }
+    } catch (error) {
+        console.error('Error deleting local document:', error)
         return { error }
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     View,
     Text,
@@ -8,14 +8,20 @@ import {
     TextInput,
     Alert,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useCreateSPClient } from '../../../../src/hooks/useServiceProvider'
-import { SPClient } from '../../../../src/types/serviceProvider'
+import { useSPClient, useUpdateSPClient, useDeleteSPClient } from '../../../../../src/hooks/useServiceProvider'
+import { BouncingBallsLoader } from '../../../../../src/components/ui/BouncingBallsLoader'
 
-export default function NewClientPage() {
-    const createClientMutation = useCreateSPClient()
+export default function EditClientPage() {
+    const { id } = useLocalSearchParams<{ id: string }>()
+    const { data: clientData, isLoading } = useSPClient(id)
+    const updateClientMutation = useUpdateSPClient()
+    const deleteClientMutation = useDeleteSPClient()
+
+    const client = clientData?.data
+
     const [formData, setFormData] = useState({
         full_name: '',
         phone_number: '',
@@ -25,6 +31,20 @@ export default function NewClientPage() {
         notes: '',
         is_vip: false,
     })
+
+    useEffect(() => {
+        if (client) {
+            setFormData({
+                full_name: client.full_name || '',
+                phone_number: client.phone_number || '',
+                whatsapp: client.whatsapp || '',
+                email: client.email || '',
+                address: client.address || '',
+                notes: client.notes || '',
+                is_vip: client.is_vip || false,
+            })
+        }
+    }, [client])
 
     const handleSubmit = async () => {
         if (!formData.full_name.trim()) {
@@ -37,18 +57,60 @@ export default function NewClientPage() {
             return
         }
 
-        const result = await createClientMutation.mutateAsync(formData as Partial<SPClient>)
+        const result = await updateClientMutation.mutateAsync({
+            id,
+            updates: formData,
+        })
 
         if (result.data) {
-            Alert.alert('Success', 'Client created successfully', [
+            Alert.alert('Success', 'Client updated successfully', [
                 {
                     text: 'OK',
                     onPress: () => router.back(),
                 },
             ])
         } else {
-            Alert.alert('Error', 'Failed to create client')
+            Alert.alert('Error', 'Failed to update client')
         }
+    }
+
+    const handleDelete = () => {
+        Alert.alert(
+            'Delete Client',
+            'Are you sure you want to delete this client? This action cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await deleteClientMutation.mutateAsync(id)
+                        Alert.alert('Success', 'Client deleted successfully', [
+                            {
+                                text: 'OK',
+                                onPress: () => router.push('/(verticals)/service-provider/clients'),
+                            },
+                        ])
+                    },
+                },
+            ]
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <BouncingBallsLoader size={12} color="#3B82F6" />
+            </View>
+        )
+    }
+
+    if (!client) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.errorText}>Client not found</Text>
+            </View>
+        )
     }
 
     return (
@@ -64,16 +126,18 @@ export default function NewClientPage() {
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>New Client</Text>
-                    <Text style={styles.headerSubtitle}>Add client information</Text>
+                    <Text style={styles.headerTitle}>Edit Client</Text>
+                    <Text style={styles.headerSubtitle}>Update client information</Text>
                 </View>
-                <View style={styles.placeholder} />
+                <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+                    <Ionicons name="trash-outline" size={22} color="#fff" />
+                </TouchableOpacity>
             </LinearGradient>
 
             {/* Form */}
             <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Basic Information</Text>
+                    <Text style={styles.sectionTitle}>Client Information</Text>
 
                     <View style={styles.formGroup}>
                         <Text style={styles.label}>
@@ -81,7 +145,7 @@ export default function NewClientPage() {
                         </Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter client name"
+                            placeholder="Enter full name"
                             value={formData.full_name}
                             onChangeText={(text) => setFormData({ ...formData, full_name: text })}
                         />
@@ -139,7 +203,7 @@ export default function NewClientPage() {
                         <Text style={styles.label}>Notes</Text>
                         <TextInput
                             style={[styles.input, styles.textArea]}
-                            placeholder="Add any notes about the client"
+                            placeholder="Additional notes"
                             value={formData.notes}
                             onChangeText={(text) => setFormData({ ...formData, notes: text })}
                             multiline
@@ -158,7 +222,7 @@ export default function NewClientPage() {
                                 size={24}
                                 color={formData.is_vip ? '#F59E0B' : '#6B7280'}
                             />
-                            <Text style={styles.vipToggleText}>Mark as VIP Client</Text>
+                            <Text style={styles.vipToggleText}>VIP Client</Text>
                         </View>
                         <View style={[styles.toggle, formData.is_vip && styles.toggleActive]}>
                             <View style={[styles.toggleThumb, formData.is_vip && styles.toggleThumbActive]} />
@@ -172,7 +236,7 @@ export default function NewClientPage() {
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={handleSubmit}
-                    disabled={createClientMutation.isPending}
+                    disabled={updateClientMutation.isPending}
                     activeOpacity={0.7}
                 >
                     <LinearGradient
@@ -182,7 +246,7 @@ export default function NewClientPage() {
                         style={styles.submitGradient}
                     >
                         <Text style={styles.submitText}>
-                            {createClientMutation.isPending ? 'Creating...' : 'Create Client'}
+                            {updateClientMutation.isPending ? 'Updating...' : 'Update Client'}
                         </Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -195,6 +259,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F9FAFB',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#6B7280',
     },
     header: {
         paddingHorizontal: 20,
@@ -225,8 +299,10 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.9)',
         marginTop: 2,
     },
-    placeholder: {
-        width: 40,
+    deleteButton: {
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        borderRadius: 12,
+        padding: 10,
     },
     content: {
         flex: 1,

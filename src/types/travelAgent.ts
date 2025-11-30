@@ -130,6 +130,7 @@ export type FollowUp = {
 // Client Earnings type
 export type ClientEarning = {
   id: string
+  user_id: string
   client_id: string
   amount: number
   currency: string
