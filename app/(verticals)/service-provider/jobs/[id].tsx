@@ -209,13 +209,6 @@ export default function JobDetailsPage() {
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Job Details</Text>
 
-                    {job.category && (
-                        <View style={styles.detailRow}>
-                            <Ionicons name="pricetag" size={20} color="#8B5CF6" />
-                            <Text style={styles.detailLabel}>Category</Text>
-                            <Text style={styles.detailValue}>{job.category.name}</Text>
-                        </View>
-                    )}
 
                     {job.scheduled_date && (
                         <View style={styles.detailRow}>

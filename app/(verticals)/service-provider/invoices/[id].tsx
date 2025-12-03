@@ -64,21 +64,23 @@ export default function InvoiceDetailsPage() {
         try {
             setIsGeneratingPdf(true)
 
-            // Fetch company profile for logo and name
+            // Fetch company profile for logo, name and type of work
             const { data: { user } } = await supabase.auth.getUser()
             let companyLogo = null
             let companyName = 'Service Provider'
+            let typeOfWork = 'Professional Services'
 
             if (user) {
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('company_logo, full_name, company_name')
+                    .select('company_logo, full_name, company_name, type_of_work')
                     .eq('id', user.id)
                     .single()
 
                 if (profile) {
                     companyLogo = profile.company_logo
                     companyName = profile.company_name || profile.full_name || 'Service Provider'
+                    typeOfWork = profile.type_of_work || 'Professional Services'
                 }
             }
 
@@ -107,10 +109,10 @@ export default function InvoiceDetailsPage() {
                             .header {
                                 display: flex;
                                 justify-content: space-between;
-                                padding: 20px;
-                                background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-                                color: white;
-                                border-radius: 8px;
+                                padding: 24px 30px;
+                                background: #fff;
+                                color: #111827;
+                                border-bottom: 1px solid #E5E7EB;
                                 margin-bottom: 30px;
                             }
                             .logo-container {
@@ -120,39 +122,46 @@ export default function InvoiceDetailsPage() {
                             .logo {
                                 width: 60px;
                                 height: 60px;
-                                border-radius: 10px;
-                                margin-right: 15px;
+                                border-radius: 8px;
+                                margin-right: 16px;
                                 object-fit: cover;
-                                border: 2px solid rgba(255,255,255,0.3);
                             }
                             .company-name {
                                 font-size: 24px;
-                                font-weight: 700;
+                                font-weight: 800;
+                                color: #111827;
                                 margin-bottom: 4px;
+                                letter-spacing: -0.5px;
                             }
                             .company-tagline {
-                                font-size: 12px;
-                                opacity: 0.9;
+                                font-size: 13px;
+                                color: #6B7280;
+                                font-weight: 500;
                             }
                             .invoice-title {
                                 text-align: right;
                             }
                             .invoice-title h1 {
-                                font-size: 32px;
-                                font-weight: 700;
-                                margin-bottom: 8px;
+                                font-size: 42px;
+                                font-weight: 900;
+                                color: #10B981;
+                                margin-bottom: 4px;
+                                letter-spacing: -1px;
+                                line-height: 1;
                             }
                             .invoice-number {
                                 font-size: 14px;
-                                opacity: 0.95;
+                                color: #6B7280;
+                                font-weight: 500;
                             }
                             .invoice-info {
                                 display: flex;
                                 justify-content: space-between;
-                                margin-bottom: 30px;
-                                padding: 20px;
+                                margin: 0 30px 40px;
+                                padding: 24px;
                                 background: #F9FAFB;
-                                border-radius: 8px;
+                                border-radius: 12px;
+                                border: 1px solid #F3F4F6;
                             }
                             .info-section {
                                 flex: 1;
@@ -189,45 +198,60 @@ export default function InvoiceDetailsPage() {
                                 ${invoice.status === 'cancelled' ? 'background: #F3F4F6; color: #6B7280;' : ''}
                             }
                             .section {
-                                margin-bottom: 30px;
+                                margin: 0 30px 30px;
                             }
                             .section-title {
-                                font-size: 14px;
+                                font-size: 13px;
                                 font-weight: 700;
                                 color: #111827;
                                 margin-bottom: 16px;
                                 text-transform: uppercase;
+                                letter-spacing: 0.5px;
                             }
                             .table {
                                 width: 100%;
-                                border-collapse: collapse;
+                                border-collapse: separate;
+                                border-spacing: 0;
                                 margin-bottom: 20px;
                             }
-                            .table thead {
-                                background: #F9FAFB;
-                            }
-                            .table th {
-                                padding: 12px;
+                            .table thead th {
+                                background: #F3F4F6;
+                                padding: 12px 16px;
                                 text-align: left;
                                 font-size: 11px;
-                                font-weight: 600;
-                                color: #6B7280;
+                                font-weight: 700;
+                                color: #4B5563;
                                 text-transform: uppercase;
-                                border-bottom: 2px solid #E5E7EB;
+                                letter-spacing: 0.5px;
+                            }
+                            .table thead th:first-child {
+                                border-top-left-radius: 8px;
+                                border-bottom-left-radius: 8px;
+                            }
+                            .table thead th:last-child {
+                                border-top-right-radius: 8px;
+                                border-bottom-right-radius: 8px;
                             }
                             .table td {
-                                padding: 12px;
-                                font-size: 12px;
+                                padding: 16px;
+                                font-size: 13px;
                                 color: #374151;
                                 border-bottom: 1px solid #F3F4F6;
                             }
+                            .table tr:last-child td {
+                                border-bottom: none;
+                            }
                             .description-col {
-                                width: 100%;
+                                width: 70%;
+                                font-weight: 500;
                             }
                             .summary-table {
                                 width: 300px;
                                 margin-left: auto;
                                 margin-top: 20px;
+                                background: #F9FAFB;
+                                padding: 20px;
+                                border-radius: 12px;
                             }
                             .summary-row {
                                 display: flex;
@@ -300,7 +324,7 @@ export default function InvoiceDetailsPage() {
                                     ${companyLogo ? `<img src="${companyLogo}" class="logo" />` : ''}
                                     <div>
                                         <div class="company-name">${companyName}</div>
-                                        <div class="company-tagline">Professional Services</div>
+                                        <div class="company-tagline">${typeOfWork}</div>
                                     </div>
                                 </div>
                                 <div class="invoice-title">

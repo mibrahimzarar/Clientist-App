@@ -207,8 +207,8 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <BouncingBallsLoader size={12} color="#4F46E5" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <BouncingBallsLoader size={12} color="#222" />
       </View>
     )
   }

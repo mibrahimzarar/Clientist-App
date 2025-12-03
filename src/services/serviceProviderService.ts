@@ -664,6 +664,8 @@ export async function getSPDashboardStats(): Promise<{ data: SPDashboardStats | 
             repeat_services_due: 0, // Will be calculated from repeat services
             overdue_invoices_count: invoices
                 ?.filter(i => i.status === 'overdue').length || 0,
+            urgent_jobs_count: allJobs
+                ?.filter(j => j.is_urgent && j.status !== 'completed' && j.status !== 'cancelled').length || 0,
         }
 
         return { data: stats, error: null }

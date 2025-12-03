@@ -204,6 +204,7 @@ export type SPDashboardStats = {
     hot_leads: number
     repeat_services_due: number
     overdue_invoices_count: number
+    urgent_jobs_count: number
 }
 
 // Job with related data for detailed view

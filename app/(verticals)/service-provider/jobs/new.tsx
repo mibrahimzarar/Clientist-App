@@ -29,7 +29,6 @@ export default function NewJobPage() {
         title: '',
         description: '',
         client_id: '',
-        category_id: '',
         location_address: '',
         status: 'in_progress' as SPJobStatus,
         priority: 'normal' as SPJobPriority,
@@ -41,7 +40,6 @@ export default function NewJobPage() {
     })
 
     const [showClientPicker, setShowClientPicker] = useState(false)
-    const [showCategoryPicker, setShowCategoryPicker] = useState(false)
 
     const handleSubmit = async () => {
         if (!formData.title.trim()) {
@@ -66,7 +64,6 @@ export default function NewJobPage() {
             labor_cost: laborCost,
             total_cost: totalCost,
             scheduled_date: formData.scheduled_date || undefined,
-            category_id: formData.category_id || undefined,
         } as Partial<SPJob>)
 
         if (result.data) {
@@ -134,20 +131,6 @@ export default function NewJobPage() {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Category</Text>
-                        <TouchableOpacity
-                            style={styles.pickerContainer}
-                            onPress={() => setShowCategoryPicker(true)}
-                        >
-                            <Ionicons name="pricetag" size={20} color="#6B7280" />
-                            <Text style={[styles.pickerText, !formData.category_id && styles.placeholderText]}>
-                                {categories.find(c => c.id === formData.category_id)?.name || 'Select Category'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.formGroup}>
                         <Text style={styles.label}>Description</Text>
                         <TextInput
                             style={[styles.input, styles.textArea]}
@@ -184,29 +167,7 @@ export default function NewJobPage() {
                         />
                     </View>
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Priority</Text>
-                        <View style={styles.priorityButtons}>
-                            {(['low', 'normal', 'high', 'urgent'] as SPJobPriority[]).map((priority) => (
-                                <TouchableOpacity
-                                    key={priority}
-                                    style={[
-                                        styles.priorityButton,
-                                        formData.priority === priority && styles.priorityButtonActive
-                                    ]}
-                                    onPress={() => setFormData({ ...formData, priority })}
-                                >
-                                    <Text style={[
-                                        styles.priorityButtonText,
-                                        formData.priority === priority && styles.priorityButtonTextActive
-                                    ]}>
-                                        {priority}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
+        
                     <TouchableOpacity
                         style={styles.urgentToggle}
                         onPress={() => setFormData({ ...formData, is_urgent: !formData.is_urgent })}
@@ -336,55 +297,6 @@ export default function NewJobPage() {
                 </View>
             </Modal>
 
-            {/* Category Picker Modal */}
-            <Modal
-                visible={showCategoryPicker}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowCategoryPicker(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Select Category</Text>
-                            <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-                        <FlatList
-                            data={categories}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.modalItem,
-                                        formData.category_id === item.id && styles.modalItemSelected
-                                    ]}
-                                    onPress={() => {
-                                        setFormData({ ...formData, category_id: item.id })
-                                        setShowCategoryPicker(false)
-                                    }}
-                                >
-                                    <Text style={[
-                                        styles.modalItemText,
-                                        formData.category_id === item.id && styles.modalItemTextSelected
-                                    ]}>
-                                        {item.name}
-                                    </Text>
-                                    {formData.category_id === item.id && (
-                                        <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                                    )}
-                                </TouchableOpacity>
-                            )}
-                            ListEmptyComponent={
-                                <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No categories available</Text>
-                                </View>
-                            }
-                        />
-                    </View>
-                </View>
-            </Modal>
         </View>
     )
 }

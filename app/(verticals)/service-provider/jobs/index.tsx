@@ -240,12 +240,6 @@ export default function JobsPage() {
                                     )}
                                 </View>
 
-                                {job.category && (
-                                    <View style={styles.categoryBadge}>
-                                        <Ionicons name="pricetag" size={10} color="#8B5CF6" />
-                                        <Text style={styles.categoryText}>{job.category.name}</Text>
-                                    </View>
-                                )}
                             </View>
 
                             <Ionicons name="chevron-forward" size={20} color="#D1D5DB" style={styles.chevron} />

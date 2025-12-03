@@ -33,9 +33,7 @@ export default function EditJobPage() {
         title: '',
         description: '',
         client_id: '',
-        category_id: '',
         location_address: '',
-        priority: 'normal' as SPJobPriority,
         job_price: '',
         parts_cost: '',
         labor_cost: '',
@@ -44,7 +42,6 @@ export default function EditJobPage() {
     })
 
     const [showClientPicker, setShowClientPicker] = useState(false)
-    const [showCategoryPicker, setShowCategoryPicker] = useState(false)
 
     useEffect(() => {
         if (job) {
@@ -52,9 +49,7 @@ export default function EditJobPage() {
                 title: job.title || '',
                 description: job.description || '',
                 client_id: job.client_id || '',
-                category_id: job.category_id || '',
                 location_address: job.location_address || '',
-                priority: job.priority || 'normal',
                 job_price: job.job_price?.toString() || '',
                 parts_cost: job.parts_cost?.toString() || '',
                 labor_cost: job.labor_cost?.toString() || '',
@@ -86,9 +81,7 @@ export default function EditJobPage() {
                 title: formData.title,
                 description: formData.description,
                 client_id: formData.client_id,
-                category_id: formData.category_id || undefined,
                 location_address: formData.location_address,
-                priority: formData.priority,
                 job_price: jobPrice || undefined,
                 parts_cost: partsCost,
                 labor_cost: laborCost,
@@ -178,19 +171,7 @@ export default function EditJobPage() {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Category</Text>
-                        <TouchableOpacity
-                            style={styles.pickerContainer}
-                            onPress={() => setShowCategoryPicker(true)}
-                        >
-                            <Ionicons name="pricetag" size={20} color="#6B7280" />
-                            <Text style={[styles.pickerText, !formData.category_id && styles.placeholderText]}>
-                                {categories.find(c => c.id === formData.category_id)?.name || 'Select Category'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                        </TouchableOpacity>
-                    </View>
+                    
 
                     <View style={styles.formGroup}>
                         <Text style={styles.label}>Description</Text>
@@ -227,29 +208,6 @@ export default function EditJobPage() {
                             onChange={(date) => setFormData({ ...formData, scheduled_date: date })}
                             placeholder="Select date"
                         />
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Priority</Text>
-                        <View style={styles.priorityButtons}>
-                            {(['low', 'normal', 'high', 'urgent'] as SPJobPriority[]).map((priority) => (
-                                <TouchableOpacity
-                                    key={priority}
-                                    style={[
-                                        styles.priorityButton,
-                                        formData.priority === priority && styles.priorityButtonActive
-                                    ]}
-                                    onPress={() => setFormData({ ...formData, priority })}
-                                >
-                                    <Text style={[
-                                        styles.priorityButtonText,
-                                        formData.priority === priority && styles.priorityButtonTextActive
-                                    ]}>
-                                        {priority}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -367,51 +325,6 @@ export default function EditJobPage() {
                                         {item.full_name}
                                     </Text>
                                     {formData.client_id === item.id && (
-                                        <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                                    )}
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Category Picker Modal */}
-            <Modal
-                visible={showCategoryPicker}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowCategoryPicker(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Select Category</Text>
-                            <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-                        <FlatList
-                            data={categories}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.modalItem,
-                                        formData.category_id === item.id && styles.modalItemSelected
-                                    ]}
-                                    onPress={() => {
-                                        setFormData({ ...formData, category_id: item.id })
-                                        setShowCategoryPicker(false)
-                                    }}
-                                >
-                                    <Text style={[
-                                        styles.modalItemText,
-                                        formData.category_id === item.id && styles.modalItemTextSelected
-                                    ]}>
-                                        {item.name}
-                                    </Text>
-                                    {formData.category_id === item.id && (
                                         <Ionicons name="checkmark" size={20} color="#3B82F6" />
                                     )}
                                 </TouchableOpacity>

@@ -136,10 +136,10 @@ export const ServiceProviderDashboard: React.FC = () => {
 
                 {/* Top Stats Widget */}
                 <TopStatsWidget
-                    pendingJobs={stats?.pending_payment_jobs || 0}
+                    pendingJobs={stats?.jobs_in_progress || 0}
                     activeClients={stats?.active_clients || 0}
                     completedClients={stats?.total_jobs_completed || 0}
-                    urgentTasks={stats?.outstanding_payments_count || 0}
+                    urgentTasks={stats?.urgent_jobs_count || 0}
                     notifications={notifications}
                 />
 
@@ -236,7 +236,7 @@ export const ServiceProviderDashboard: React.FC = () => {
                 <LeadsWidget />
 
                 {/* Earnings Widget */}
-                <EarningsWidget stats={stats} />
+                <EarningsWidget />
             </ScrollView>
         </View>
     )
