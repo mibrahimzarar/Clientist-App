@@ -5,10 +5,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '../../lib/supabase'
 import { useSPDashboardStats, useSPJobs, useSPLeads, useSPInvoices } from '../../hooks/useServiceProvider'
+import { SPDashboardStats } from '../../types/serviceProvider'
 import { TopStatsWidget } from '../widgets/serviceProvider/TopStatsWidget'
+import { QuickActionsWidget } from '../widgets/serviceProvider/QuickActionsWidget'
 import { EarningsWidget } from '../widgets/serviceProvider/EarningsWidget'
 import { ServiceProviderCalendarWidget } from '../widgets/serviceProvider/ServiceProviderCalendarWidget'
 import { LeadsWidget } from '../widgets/serviceProvider/LeadsWidget'
+import { SmartRemindersWidget } from '../widgets/serviceProvider/SmartRemindersWidget'
 
 export const ServiceProviderDashboard: React.FC = () => {
     const { data: statsData } = useSPDashboardStats()
@@ -178,6 +181,9 @@ export const ServiceProviderDashboard: React.FC = () => {
 
                 {/* Calendar Widget */}
                 <ServiceProviderCalendarWidget />
+
+                {/* Smart Reminders Widget */}
+                <SmartRemindersWidget />
 
                 {/* Active Jobs Widget */}
                 <View style={styles.activeProjectsContainer}>
