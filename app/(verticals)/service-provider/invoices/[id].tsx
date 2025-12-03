@@ -344,7 +344,7 @@ export default function InvoiceDetailsPage() {
                                         ${invoice.items?.map(task => `
                                             <tr>
                                                 <td class="description-col">${task.description}</td>
-                                                <td style="text-align: right;">₨${task.amount.toLocaleString()}</td>
+                                                <td style="text-align: right;">${task.amount.toLocaleString()}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -353,32 +353,32 @@ export default function InvoiceDetailsPage() {
                                 <div class="summary-table">
                                     <div class="summary-row">
                                         <div class="summary-label">Subtotal</div>
-                                        <div class="summary-value">₨${invoice.subtotal.toLocaleString()}</div>
+                                        <div class="summary-value">${invoice.subtotal.toLocaleString()}</div>
                                     </div>
                                     ${invoice.tax_amount > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Tax</div>
-                                            <div class="summary-value">₨${invoice.tax_amount.toLocaleString()}</div>
+                                            <div class="summary-value">${invoice.tax_amount.toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                     ${invoice.discount_amount > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Discount</div>
-                                            <div class="summary-value" style="color: #EF4444;">-₨${invoice.discount_amount.toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #EF4444;">-${invoice.discount_amount.toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                     <div class="total-row">
                                         <div class="total-label">Total</div>
-                                        <div class="total-value">₨${invoice.total_amount.toLocaleString()}</div>
+                                        <div class="total-value">${invoice.total_amount.toLocaleString()}</div>
                                     </div>
                                     ${invoice.amount_paid > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Amount Paid</div>
-                                            <div class="summary-value" style="color: #10B981;">₨${invoice.amount_paid.toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #10B981;">${invoice.amount_paid.toLocaleString()}</div>
                                         </div>
                                         <div class="summary-row">
                                             <div class="summary-label">Amount Due</div>
-                                            <div class="summary-value" style="color: #EF4444; font-weight: 700;">₨${(invoice.total_amount - invoice.amount_paid).toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #EF4444; font-weight: 700;">${(invoice.total_amount - invoice.amount_paid).toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                 </div>

@@ -14,7 +14,7 @@ interface Notification {
 }
 
 interface TopStatsWidgetProps {
-    totalClients: number
+    pendingJobs: number
     activeClients: number
     completedClients: number
     urgentTasks: number
@@ -23,7 +23,7 @@ interface TopStatsWidgetProps {
 }
 
 export const TopStatsWidget: React.FC<TopStatsWidgetProps> = ({
-    totalClients,
+    pendingJobs,
     activeClients,
     completedClients,
     urgentTasks,
@@ -64,11 +64,11 @@ export const TopStatsWidget: React.FC<TopStatsWidgetProps> = ({
                     <View style={styles.topSection}>
                         <View style={styles.mainStats}>
                             <View style={styles.clientIconContainer}>
-                                <Ionicons name="people" size={32} color="#fff" />
+                                <Ionicons name="time" size={32} color="#fff" />
                             </View>
                             <View style={styles.mainStatsContent}>
-                                <Text style={styles.mainLabel}>Active Clients</Text>
-                                <Text style={styles.mainNumber}>{activeClients}</Text>
+                                <Text style={styles.mainLabel}>Pending Jobs</Text>
+                                <Text style={styles.mainNumber}>{pendingJobs}</Text>
                             </View>
                         </View>
 
@@ -94,11 +94,11 @@ export const TopStatsWidget: React.FC<TopStatsWidgetProps> = ({
 
                         <View style={styles.statItem}>
                             <View style={styles.statIconContainer}>
-                                <Ionicons name="layers" size={18} color="#80A5GC" />
+                                <Ionicons name="people" size={18} color="#fff" />
                             </View>
                             <View>
-                                <Text style={styles.statNumber}>{totalClients}</Text>
-                                <Text style={styles.statLabel}>Total</Text>
+                                <Text style={styles.statNumber}>{activeClients}</Text>
+                                <Text style={styles.statLabel}>Clients</Text>
                             </View>
                         </View>
                     </View>

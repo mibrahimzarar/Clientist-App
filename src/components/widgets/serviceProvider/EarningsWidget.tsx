@@ -10,7 +10,7 @@ interface EarningsWidgetProps {
 
 export const EarningsWidget: React.FC<EarningsWidgetProps> = ({ stats }) => {
     const formatCurrency = (amount: number) => {
-        return `₨${amount.toLocaleString()}`
+        return amount.toLocaleString()
     }
 
     return (

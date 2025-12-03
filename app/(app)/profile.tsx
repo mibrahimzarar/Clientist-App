@@ -31,6 +31,7 @@ export default function Profile() {
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string>('')
   const [companyName, setCompanyName] = useState<string>('')
+  const [typeOfWork, setTypeOfWork] = useState<string>('')
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({ trips: true, tasks: true, leads: true })
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
@@ -66,7 +67,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('company_name, company_logo')
+        .select('company_name, company_logo, type_of_work')
         .eq('id', user.id)
         .single()
 
@@ -77,6 +78,7 @@ export default function Profile() {
       if (data) {
         setCompanyName(data.company_name || '')
         setCompanyLogo(data.company_logo || null)
+        setTypeOfWork(data.type_of_work || '')
       }
 
       // Load notification preferences
@@ -145,6 +147,7 @@ export default function Profile() {
           id: userId,
           company_name: companyName,
           company_logo: logoUrl || companyLogo,
+          type_of_work: typeOfWork,
           updated_at: new Date().toISOString(),
         })
 
@@ -254,15 +257,30 @@ export default function Profile() {
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.label}>Company Name</Text>
+            <Text style={styles.label}>{currentVertical === 'service_provider' ? 'Name' : 'Company Name'}</Text>
             <TextInput
               style={styles.companyNameInput}
               value={companyName}
               onChangeText={setCompanyName}
               onBlur={() => saveProfile()}
-              placeholder="Enter Company Name"
+              placeholder={currentVertical === 'service_provider' ? "Enter Name" : "Enter Company Name"}
               placeholderTextColor="#9CA3AF"
             />
+            
+            {currentVertical === 'service_provider' && (
+              <>
+                <Text style={[styles.label, { marginTop: 16 }]}>Type of Work</Text>
+                <TextInput
+                  style={styles.companyNameInput}
+                  value={typeOfWork}
+                  onChangeText={setTypeOfWork}
+                  onBlur={() => saveProfile()}
+                  placeholder="e.g. Electrician, Plumber"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </>
+            )}
+
             <View style={styles.emailBadge}>
               <Ionicons name="mail" size={14} color="#6B7280" />
               <Text style={styles.emailText}>{email}</Text>
@@ -329,6 +347,8 @@ export default function Profile() {
                 <Text style={styles.modalSubtitle}>
                   {currentVertical === 'freelancer' 
                     ? 'Receive reminders for upcoming projects and deadlines. Notifications are sent based on your project timeline.'
+                    : currentVertical === 'service_provider'
+                    ? 'Receive reminders for upcoming jobs and payments.'
                     : 'Receive reminders for upcoming events. Notifications are sent 1 day before and on the day of the event.'}
                 </Text>
 
@@ -386,6 +406,72 @@ export default function Profile() {
                           <View>
                             <Text style={styles.toggleLabel}>Lead Follow-ups</Text>
                             <Text style={styles.toggleDescription}>Follow up with leads</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.leads}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, leads: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#D97706' }}
+                        />
+                      </View>
+                    </>
+                  ) : currentVertical === 'service_provider' ? (
+                    // Service Provider specific notifications
+                    <>
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#ECFDF5' }]}>
+                            <Ionicons name="hammer" size={20} color="#10B981" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Upcoming Jobs</Text>
+                            <Text style={styles.toggleDescription}>Job schedule reminders</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.trips}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, trips: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                        />
+                      </View>
+
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FDF2F8' }]}>
+                            <Ionicons name="receipt" size={20} color="#BE185D" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Invoices</Text>
+                            <Text style={styles.toggleDescription}>Payment reminders</Text>
+                          </View>
+                        </View>
+                        <Switch
+                          value={notificationPrefs.tasks}
+                          onValueChange={(val) => {
+                            const newPrefs = { ...notificationPrefs, tasks: val }
+                            setNotificationPrefs(newPrefs)
+                            NotificationService.savePreferences(newPrefs)
+                          }}
+                          trackColor={{ false: '#E5E7EB', true: '#BE185D' }}
+                        />
+                      </View>
+
+                      <View style={styles.toggleRow}>
+                        <View style={styles.toggleInfo}>
+                          <View style={[styles.toggleIcon, { backgroundColor: '#FEF3C7' }]}>
+                            <Ionicons name="person-add" size={20} color="#D97706" />
+                          </View>
+                          <View>
+                            <Text style={styles.toggleLabel}>Lead Updates</Text>
+                            <Text style={styles.toggleDescription}>New leads and follow-ups</Text>
                           </View>
                         </View>
                         <Switch

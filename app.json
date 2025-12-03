@@ -28,6 +28,17 @@
       "ios",
       "android",
       "web"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "73f20b1a-ac84-4a82-b8ac-d4fc8bbd4e9b"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/73f20b1a-ac84-4a82-b8ac-d4fc8bbd4e9b"
+    }
   }
 }

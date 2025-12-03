@@ -31,9 +31,6 @@ export default function NewInvoicePage() {
         invoice_number: `INV-${Date.now().toString().slice(-6)}`,
         invoice_date: new Date().toISOString(),
         due_date: '',
-        tax_amount: '',
-        discount_amount: '',
-        notes: '',
     })
 
     const [tasks, setTasks] = useState<Partial<SPInvoiceItem>[]>([
@@ -52,10 +49,7 @@ export default function NewInvoicePage() {
     }
 
     const calculateTotal = () => {
-        const subtotal = calculateSubtotal()
-        const tax = parseFloat(formData.tax_amount) || 0
-        const discount = parseFloat(formData.discount_amount) || 0
-        return subtotal + tax - discount
+        return calculateSubtotal()
     }
 
     const addTask = () => {
@@ -99,11 +93,11 @@ export default function NewInvoicePage() {
                 due_date: formData.due_date || undefined,
                 status: 'unpaid',
                 subtotal: calculateSubtotal(),
-                tax_amount: parseFloat(formData.tax_amount) || 0,
-                discount_amount: parseFloat(formData.discount_amount) || 0,
+                tax_amount: 0,
+                discount_amount: 0,
                 total_amount: calculateTotal(),
                 amount_paid: 0,
-                notes: formData.notes,
+                notes: '',
             },
             items: tasks.map(task => ({
                 description: task.description!,
@@ -263,49 +257,9 @@ export default function NewInvoicePage() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Pricing</Text>
 
-                    <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Subtotal</Text>
-                        <Text style={styles.summaryValue}>₨{calculateSubtotal().toLocaleString()}</Text>
-                    </View>
-
-                    <View style={styles.formRow}>
-                        <View style={[styles.formGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Tax Amount</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="0"
-                                value={formData.tax_amount}
-                                onChangeText={(text) => setFormData({ ...formData, tax_amount: text })}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                        <View style={[styles.formGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Discount</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="0"
-                                value={formData.discount_amount}
-                                onChangeText={(text) => setFormData({ ...formData, discount_amount: text })}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                    </View>
-
                     <View style={styles.totalCard}>
                         <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={styles.totalValue}>₨{calculateTotal().toLocaleString()}</Text>
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Notes</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            placeholder="Additional notes"
-                            value={formData.notes}
-                            onChangeText={(text) => setFormData({ ...formData, notes: text })}
-                            multiline
-                            numberOfLines={3}
-                        />
+                        <Text style={styles.totalValue}>{calculateTotal().toLocaleString()}</Text>
                     </View>
                 </View>
             </ScrollView>
@@ -414,7 +368,7 @@ export default function NewInvoicePage() {
                                         </Text>
                                         {item.job_price && (
                                             <Text style={styles.modalItemSubtext}>
-                                                ₨{item.job_price.toLocaleString()}
+                                                {item.job_price.toLocaleString()}
                                             </Text>
                                         )}
                                     </View>

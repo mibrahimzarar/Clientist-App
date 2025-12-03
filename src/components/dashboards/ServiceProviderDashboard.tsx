@@ -8,6 +8,7 @@ import { useSPDashboardStats, useSPJobs, useSPLeads, useSPInvoices } from '../..
 import { TopStatsWidget } from '../widgets/serviceProvider/TopStatsWidget'
 import { EarningsWidget } from '../widgets/serviceProvider/EarningsWidget'
 import { ServiceProviderCalendarWidget } from '../widgets/serviceProvider/ServiceProviderCalendarWidget'
+import { LeadsWidget } from '../widgets/serviceProvider/LeadsWidget'
 
 export const ServiceProviderDashboard: React.FC = () => {
     const { data: statsData } = useSPDashboardStats()
@@ -15,6 +16,7 @@ export const ServiceProviderDashboard: React.FC = () => {
     const { data: leadsData } = useSPLeads()
     const { data: invoicesData } = useSPInvoices()
     const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+    const [companyName, setCompanyName] = useState<string>('Service Provider')
 
     const stats = statsData?.data
     const allJobs = jobsData?.data || []
@@ -33,12 +35,15 @@ export const ServiceProviderDashboard: React.FC = () => {
             if (user) {
                 const { data } = await supabase
                     .from('profiles')
-                    .select('company_logo')
+                    .select('company_logo, company_name')
                     .eq('id', user.id)
                     .single()
 
                 if (data?.company_logo) {
                     setCompanyLogo(data.company_logo)
+                }
+                if (data?.company_name) {
+                    setCompanyName(data.company_name)
                 }
             }
         } catch (error) {
@@ -64,7 +69,7 @@ export const ServiceProviderDashboard: React.FC = () => {
         followUpDate.setHours(0, 0, 0, 0)
         return followUpDate.toDateString() === todayStr
     }).length || 0
-    
+
     const dueInvoices = invoicesData?.data?.filter(inv => {
         if (!inv.due_date || inv.status === 'paid') return false
         const dueDate = new Date(inv.due_date)
@@ -119,11 +124,11 @@ export const ServiceProviderDashboard: React.FC = () => {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>Welcome back,</Text>
-                        <Text style={styles.name}>Service Provider</Text>
+                        <Text style={styles.name}>{companyName}</Text>
                     </View>
                     <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
                         <Image
-                            source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=SP&background=3B82F6&color=fff' }}
+                            source={{ uri: companyLogo || `https://ui-avatars.com/api/?name=${companyName}&background=3B82F6&color=fff` }}
                             style={styles.profileImage}
                         />
                     </TouchableOpacity>
@@ -131,12 +136,11 @@ export const ServiceProviderDashboard: React.FC = () => {
 
                 {/* Top Stats Widget */}
                 <TopStatsWidget
-                    totalClients={stats.total_clients}
-                    activeClients={stats.active_clients}
-                    completedClients={stats.total_jobs_completed}
-                    urgentTasks={stats.pending_payment_jobs}
+                    pendingJobs={stats?.pending_payment_jobs || 0}
+                    activeClients={stats?.active_clients || 0}
+                    completedClients={stats?.total_jobs_completed || 0}
+                    urgentTasks={stats?.outstanding_payments_count || 0}
                     notifications={notifications}
-                    onClientPress={() => router.push('/(verticals)/service-provider/clients')}
                 />
 
                 {/* Quick Actions */}
@@ -162,13 +166,6 @@ export const ServiceProviderDashboard: React.FC = () => {
                             <Ionicons name="receipt" size={24} color="#fff" />
                         </LinearGradient>
                         <Text style={styles.actionText}>Invoices</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/service-provider/payments')}>
-                        <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.actionIcon}>
-                            <Ionicons name="card" size={24} color="#fff" />
-                        </LinearGradient>
-                        <Text style={styles.actionText}>Payments</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(verticals)/service-provider/leads')}>
@@ -197,8 +194,8 @@ export const ServiceProviderDashboard: React.FC = () => {
                                         <Ionicons name="construct" size={20} color="#2563EB" />
                                     </View>
                                     <View>
-                                        <Text style={styles.widgetTitle}>Active Jobs</Text>
-                                        <Text style={styles.widgetSubtitle}>{jobs.length} in progress</Text>
+                                        <Text style={styles.widgetTitle}>Pending Jobs</Text>
+                                        <Text style={styles.widgetSubtitle}>{jobs.length} in pending</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity onPress={() => router.push('/(verticals)/service-provider/jobs')}>
@@ -234,6 +231,9 @@ export const ServiceProviderDashboard: React.FC = () => {
                         </View>
                     </View>
                 </View>
+
+                {/* Leads Widget */}
+                <LeadsWidget />
 
                 {/* Earnings Widget */}
                 <EarningsWidget stats={stats} />

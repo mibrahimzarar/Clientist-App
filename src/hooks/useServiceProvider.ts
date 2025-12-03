@@ -20,8 +20,10 @@ import {
     getSPPayments,
     createSPPayment,
     getSPLeads,
+    getSPLead,
     createSPLead,
     updateSPLead,
+    deleteSPLead,
     convertSPLeadToClient,
     getSPDashboardStats,
 } from '../services/serviceProviderService'
@@ -257,6 +259,14 @@ export function useSPLeads(filters?: { status?: SPLeadStatus }) {
     })
 }
 
+export function useSPLead(id: string) {
+    return useQuery({
+        queryKey: ['sp-lead', id],
+        queryFn: () => getSPLead(id),
+        enabled: !!id,
+    })
+}
+
 export function useCreateSPLead() {
     const queryClient = useQueryClient()
 
@@ -275,6 +285,23 @@ export function useUpdateSPLead() {
     return useMutation({
         mutationFn: ({ id, updates }: { id: string; updates: Partial<SPLead> }) =>
             updateSPLead(id, updates),
+        onSuccess: (_, { id }) => {
+            queryClient.invalidateQueries({ queryKey: ['sp-leads'] })
+            queryClient.invalidateQueries({ queryKey: ['sp-lead', id] })
+            queryClient.invalidateQueries({ queryKey: ['sp-dashboard-stats'] })
+        },
+    })
+}
+
+export function useDeleteSPLead() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await deleteSPLead(id)
+            if (error) throw error
+            return { error: null }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['sp-leads'] })
             queryClient.invalidateQueries({ queryKey: ['sp-dashboard-stats'] })

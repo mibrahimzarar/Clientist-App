@@ -322,10 +322,10 @@ export async function createSPInvoice(invoice: Partial<SPInvoice>, items: Partia
         // Create invoice
         const { data: invoiceData, error: invoiceError } = await supabase
             .from('sp_invoices')
-            .insert({ 
-                ...invoice, 
+            .insert({
+                ...invoice,
                 invoice_number: invoiceNumber,
-                created_by: user.id 
+                created_by: user.id
             })
             .select()
             .single()
@@ -524,6 +524,22 @@ export async function getSPLeads(filters?: { status?: SPLeadStatus }) {
     }
 }
 
+export async function getSPLead(id: string) {
+    try {
+        const { data, error } = await supabase
+            .from('sp_leads')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+        if (error) throw error
+        return { data: data as SPLead, error: null }
+    } catch (error) {
+        console.error('Error fetching SP lead:', error)
+        return { data: null, error }
+    }
+}
+
 export async function createSPLead(lead: Partial<SPLead>) {
     try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -557,6 +573,21 @@ export async function updateSPLead(id: string, updates: Partial<SPLead>) {
     } catch (error) {
         console.error('Error updating SP lead:', error)
         return { data: null, error }
+    }
+}
+
+export async function deleteSPLead(id: string) {
+    try {
+        const { error } = await supabase
+            .from('sp_leads')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        console.error('Error deleting SP lead:', JSON.stringify(error, null, 2))
+        return { error }
     }
 }
 

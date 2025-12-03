@@ -237,12 +237,12 @@ export default function InvoicesPage() {
                                 <View style={styles.invoiceAmount}>
                                     <View>
                                         <Text style={styles.amountLabel}>Total Amount</Text>
-                                        <Text style={styles.amountValue}>₨{invoice.total_amount.toLocaleString()}</Text>
+                                        <Text style={styles.amountValue}>{invoice.total_amount.toLocaleString()}</Text>
                                     </View>
                                     {invoice.amount_paid > 0 && (
                                         <View style={styles.paidBadge}>
                                             <Text style={styles.paidBadgeText}>
-                                                Paid: ₨{invoice.amount_paid.toLocaleString()}
+                                                Paid: {invoice.amount_paid.toLocaleString()}
                                             </Text>
                                         </View>
                                     )}

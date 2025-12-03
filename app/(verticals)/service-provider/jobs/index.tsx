@@ -50,7 +50,7 @@ export default function JobsPage() {
 
     const statusFilters: { label: string; value: SPJobStatus | 'all' }[] = [
         { label: 'All', value: 'all' },
-        { label: 'In Progress', value: 'in_progress' },
+        { label: 'Pending', value: 'in_progress' },
         { label: 'Completed', value: 'completed' },
         { label: 'Pending Payment', value: 'pending_payment' },
         { label: 'Cancelled', value: 'cancelled' },
@@ -217,7 +217,7 @@ export default function JobsPage() {
                                     <View style={[styles.statusChip, { backgroundColor: getStatusColor(job.status) + '20' }]}>
                                         <Ionicons name={getStatusIcon(job.status)} size={14} color={getStatusColor(job.status)} />
                                         <Text style={[styles.statusChipText, { color: getStatusColor(job.status) }]}>
-                                            {job.status.replace('_', ' ')}
+                                            {job.status === 'in_progress' ? 'Pending' : job.status.replace('_', ' ')}
                                         </Text>
                                     </View>
                                     

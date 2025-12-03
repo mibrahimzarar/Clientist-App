@@ -145,7 +145,7 @@ export default function JobDetailsPage() {
                 <View style={styles.card}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(job.status) }]}>
                         <Ionicons name={getStatusIcon(job.status)} size={16} color="#fff" />
-                        <Text style={styles.statusBadgeText}>{job.status.replace('_', ' ')}</Text>
+                        <Text style={styles.statusBadgeText}>{job.status === 'in_progress' ? 'Pending' : job.status.replace('_', ' ')}</Text>
                     </View>
 
                     {job.is_urgent && (
@@ -297,7 +297,7 @@ export default function JobDetailsPage() {
                                     styles.statusButtonText,
                                     job.status === status && { color: '#fff' }
                                 ]}>
-                                    {status.replace('_', ' ')}
+                                    {status === 'in_progress' ? 'Pending' : status.replace('_', ' ')}
                                 </Text>
                             </TouchableOpacity>
                         ))}
