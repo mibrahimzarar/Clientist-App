@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert, Image } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -74,9 +74,13 @@ export default function ClientDetailsPage() {
                 <View style={styles.card}>
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
-                                {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                            </Text>
+                            {client.profile_picture_url ? (
+                                <Image source={{ uri: client.profile_picture_url }} style={styles.avatarImage} />
+                            ) : (
+                                <Text style={styles.avatarText}>
+                                    {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                </Text>
+                            )}
                         </View>
                         {client.is_vip && (
                             <View style={styles.vipBadge}>
@@ -247,6 +251,11 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: '700',
         color: '#fff',
+    },
+    avatarImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
     },
     vipBadge: {
         flexDirection: 'row',

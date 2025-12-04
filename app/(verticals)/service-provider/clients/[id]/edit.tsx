@@ -7,10 +7,14 @@ import {
     TouchableOpacity,
     TextInput,
     Alert,
+    Image,
+    ActivityIndicator,
 } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
+import * as ImagePicker from 'expo-image-picker'
+import { supabase } from '../../../../../src/lib/supabase'
 import { useSPClient, useUpdateSPClient, useDeleteSPClient } from '../../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../../src/components/ui/BouncingBallsLoader'
 
@@ -19,6 +23,7 @@ export default function EditClientPage() {
     const { data: clientData, isLoading } = useSPClient(id)
     const updateClientMutation = useUpdateSPClient()
     const deleteClientMutation = useDeleteSPClient()
+    const [uploading, setUploading] = useState(false)
 
     const client = clientData?.data
 
@@ -30,6 +35,7 @@ export default function EditClientPage() {
         address: '',
         notes: '',
         is_vip: false,
+        profile_picture_url: '',
     })
 
     useEffect(() => {
@@ -42,9 +48,58 @@ export default function EditClientPage() {
                 address: client.address || '',
                 notes: client.notes || '',
                 is_vip: client.is_vip || false,
+                profile_picture_url: client.profile_picture_url || '',
             })
         }
     }, [client])
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.5,
+            })
+
+            if (!result.canceled) {
+                await uploadImage(result.assets[0].uri)
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image')
+        }
+    }
+
+    const uploadImage = async (uri: string) => {
+        try {
+            setUploading(true)
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('User not authenticated')
+
+            const arrayBuffer = await fetch(uri).then(res => res.arrayBuffer())
+            const fileName = `${user.id}/client_${Date.now()}.png`
+
+            const { error } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, arrayBuffer, {
+                    contentType: 'image/png',
+                    upsert: true
+                })
+
+            if (error) throw error
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(fileName)
+
+            setFormData(prev => ({ ...prev, profile_picture_url: publicUrl }))
+        } catch (error) {
+            Alert.alert('Error', 'Failed to upload image')
+            console.error(error)
+        } finally {
+            setUploading(false)
+        }
+    }
 
     const handleSubmit = async () => {
         if (!formData.full_name.trim()) {
@@ -137,6 +192,27 @@ export default function EditClientPage() {
             {/* Form */}
             <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
                 <View style={styles.section}>
+                    <View style={styles.imageSection}>
+                        <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+                            {formData.profile_picture_url ? (
+                                <Image source={{ uri: formData.profile_picture_url }} style={styles.profileImage} />
+                            ) : (
+                                <View style={styles.placeholderImage}>
+                                    <Ionicons name="person-add" size={32} color="#9CA3AF" />
+                                </View>
+                            )}
+                            <View style={styles.editIconContainer}>
+                                <Ionicons name="camera" size={16} color="#fff" />
+                            </View>
+                            {uploading && (
+                                <View style={styles.uploadingOverlay}>
+                                    <ActivityIndicator color="#fff" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <Text style={styles.addPhotoText}>Change Photo</Text>
+                    </View>
+
                     <Text style={styles.sectionTitle}>Client Information</Text>
 
                     <View style={styles.formGroup}>
@@ -319,6 +395,52 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
+    },
+    imageSection: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    imageContainer: {
+        position: 'relative',
+        marginBottom: 8,
+    },
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+    },
+    placeholderImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    editIconContainer: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#3B82F6',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#F9FAFB',
+    },
+    addPhotoText: {
+        fontSize: 14,
+        color: '#3B82F6',
+        fontWeight: '600',
+    },
+    uploadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     sectionTitle: {
         fontSize: 18,

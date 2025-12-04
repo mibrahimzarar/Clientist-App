@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     TextInput,
     Alert,
+    Image,
 } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -145,9 +146,13 @@ export default function ClientsPage() {
                             activeOpacity={0.7}
                         >
                             <View style={styles.clientAvatar}>
-                                <Text style={styles.clientInitials}>
-                                    {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                </Text>
+                                {client.profile_picture_url ? (
+                                    <Image source={{ uri: client.profile_picture_url }} style={styles.avatarImage} />
+                                ) : (
+                                    <Text style={styles.clientInitials}>
+                                        {client.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                    </Text>
+                                )}
                             </View>
 
                             <View style={styles.clientContent}>
@@ -294,6 +299,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
     },
     clientInitials: {
         fontSize: 20,
