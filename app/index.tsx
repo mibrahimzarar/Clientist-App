@@ -9,11 +9,13 @@ import { findVerticalById } from '../src/verticals'
 import FreelancerDashboard from '../src/components/dashboards/FreelancerDashboard'
 import { ServiceProviderDashboard } from '../src/components/dashboards/ServiceProviderDashboard'
 import TravelAgentDashboard from '../src/components/dashboards/TravelAgentDashboard'
+import AdminDashboard from '../src/components/dashboards/AdminDashboard'
 
 export default function Index() {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<any>(null)
   const [vertical, setVertical] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -22,6 +24,21 @@ export default function Index() {
       if (data.session?.user) {
         const v = await getSelectedVertical(data.session.user.id)
         setVertical(v)
+        
+        // Check admin status
+          let adminAccess = false
+          if (data.session.user.email?.startsWith('admin@') || data.session.user.email?.endsWith('@admin.com')) {
+              adminAccess = true
+          }
+          if (!adminAccess) {
+            const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', data.session.user.id)
+            .single()
+            adminAccess = !!profile?.is_admin
+        }
+        setIsAdmin(adminAccess)
       }
       setLoading(false)
     }
@@ -32,8 +49,23 @@ export default function Index() {
       if (session?.user) {
         const v = await getSelectedVertical(session.user.id)
         setVertical(v)
+        
+        let adminAccess = false
+        if (session.user.email?.startsWith('admin@') || session.user.email?.endsWith('@admin.com')) {
+            adminAccess = true
+        }
+        if (!adminAccess) {
+            const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single()
+            adminAccess = !!profile?.is_admin
+        }
+        setIsAdmin(adminAccess)
       } else {
         setVertical(null)
+        setIsAdmin(false)
       }
     })
     return () => auth.subscription.unsubscribe()
@@ -55,6 +87,9 @@ export default function Index() {
         return <View style={{ flex: 1, backgroundColor: '#fff' }}><ServiceProviderDashboard /></View>
       case 'travel_agent':
         return <View style={{ flex: 1, backgroundColor: '#fff' }}><TravelAgentDashboard /></View>
+      case 'admin':
+        if (!isAdmin) return <View style={{ flex: 1, backgroundColor: '#fff' }}><Text>Access Denied</Text></View>
+        return <View style={{ flex: 1, backgroundColor: '#fff' }}><AdminDashboard /></View>
       default:
         return <View style={{ flex: 1, backgroundColor: '#fff' }}><Text>Unknown Vertical</Text></View>
     }

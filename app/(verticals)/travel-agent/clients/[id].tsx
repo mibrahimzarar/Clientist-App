@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useClient, useUpdateClient, useDeleteClient, useClientEarnings, useAddClientEarning, useDeleteClientEarning } from '../../../../src/hooks/useTravelAgent'
 import { TravelClient, ClientStatus, PackageType, PriorityTag, EarningFormData } from '../../../../src/types/travelAgent'
+import { supabase } from '../../../../src/lib/supabase'
 
 export default function TravelAgentClientDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -27,6 +28,43 @@ export default function TravelAgentClientDetail() {
   const [showEarningModal, setShowEarningModal] = useState(false)
   const [earningAmount, setEarningAmount] = useState('')
   const [earningNotes, setEarningNotes] = useState('')
+  const [currencySymbol, setCurrencySymbol] = useState('$')
+
+  useEffect(() => {
+    fetchProfileCurrency()
+  }, [])
+
+  const fetchProfileCurrency = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('currency')
+          .eq('id', user.id)
+          .single()
+        
+        if (data?.currency) {
+          const currencies = [
+            { code: 'USD', symbol: '$' },
+            { code: 'EUR', symbol: '€' },
+            { code: 'GBP', symbol: '£' },
+            { code: 'INR', symbol: '₹' },
+            { code: 'AUD', symbol: '£' },
+            { code: 'CAD', symbol: '$' },
+            { code: 'SGD', symbol: '$' },
+            { code: 'JPY', symbol: '$' },
+            { code: 'CNY', symbol: '¥' },
+            { code: 'PKR', symbol: 'Rs' },
+          ]
+          const found = currencies.find(c => c.code === data.currency)
+          if (found) setCurrencySymbol(found.symbol)
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching currency:', error)
+    }
+  }
 
   const { data: clientData, isLoading, error, refetch } = useClient(id!)
   const { data: earningsData } = useClientEarnings(id!)
@@ -410,7 +448,7 @@ export default function TravelAgentClientDetail() {
                   <View key={earning.id} style={[styles.earningItem, index !== earnings.length - 1 && styles.earningItemBorder]}>
                     <View style={styles.earningItemLeft}>
                       <Text style={styles.earningAmount}>
-                        {earning.currency} {earning.amount.toFixed(2)}
+                        {currencySymbol}{earning.amount.toLocaleString()}
                       </Text>
                       {earning.notes && (
                         <Text style={styles.earningNotes}>{earning.notes}</Text>
@@ -430,7 +468,7 @@ export default function TravelAgentClientDetail() {
                 <View style={styles.earningTotalRow}>
                   <Text style={styles.earningTotalLabel}>Total Earnings:</Text>
                   <Text style={styles.earningTotalAmount}>
-                     {earnings.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+                     {currencySymbol}{earnings.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
                   </Text>
                 </View>
               </View>

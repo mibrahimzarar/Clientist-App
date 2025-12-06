@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useCreateInvoice, useFreelancerClients, useFreelancerProjects } from '../../../../src/hooks/useFreelancer'
 import { DatePickerInput } from '../../../../src/components/ui/DatePickerInput'
 import { FreelancerInvoiceItem, InvoiceStatus } from '../../../../src/types/freelancer'
+import { supabase } from '../../../../src/lib/supabase'
 
 export default function NewInvoicePage() {
     const { projectId } = useLocalSearchParams()
@@ -36,6 +37,29 @@ export default function NewInvoicePage() {
         currency: 'USD',
         notes: '',
     })
+
+    useEffect(() => {
+        fetchProfileCurrency()
+    }, [])
+
+    const fetchProfileCurrency = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('currency')
+                    .eq('id', user.id)
+                    .single()
+                
+                if (data?.currency) {
+                    setFormData(prev => ({ ...prev, currency: data.currency }))
+                }
+            }
+        } catch (error) {
+            console.log('Error fetching currency:', error)
+        }
+    }
 
     const [items, setItems] = useState<Partial<FreelancerInvoiceItem>[]>([
         { description: '', unit_price: 0, amount: 0 }
@@ -190,9 +214,9 @@ export default function NewInvoicePage() {
                         <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                             <Text style={styles.label}>Currency</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, { backgroundColor: '#F3F4F6' }]}
                                 value={formData.currency}
-                                onChangeText={(text) => setFormData({ ...formData, currency: text })}
+                                editable={false}
                             />
                         </View>
                     </View>

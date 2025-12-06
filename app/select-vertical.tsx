@@ -13,24 +13,52 @@ const verticalIcons: Record<string, any> = {
   travel_agent: 'airplane',
   freelancer: 'briefcase',
   service_provider: 'construct',
+  admin: 'shield-checkmark',
 }
 
 const verticalColors: Record<string, [string, string]> = {
   travel_agent: ['#4F46E5', '#7C3AED'],
   freelancer: ['#10B981', '#059669'],
   service_provider: ['#F59E0B', '#D97706'],
+  admin: ['#EF4444', '#DC2626'],
 }
 
 export default function SelectVertical() {
   const insets = useSafeAreaInsets()
   const [userId, setUserId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selecting, setSelecting] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
-      setUserId(data.user?.id || null)
+      if (data.user) {
+        setUserId(data.user.id)
+        
+        // Check if user is admin via DB or email pattern
+        let adminAccess = false
+        
+        // Check email pattern (e.g. admin@... or ...@admin.com)
+        if (data.user.email?.startsWith('admin@') || data.user.email?.endsWith('@admin.com')) {
+            adminAccess = true
+        }
+
+        // Check DB profile
+        if (!adminAccess) {
+            const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', data.user.id)
+            .single()
+            
+            if (profile?.is_admin) {
+            adminAccess = true
+            }
+        }
+
+        setIsAdmin(adminAccess)
+      }
       setLoading(false)
     }
     load()
@@ -70,7 +98,7 @@ export default function SelectVertical() {
 
         {/* Vertical Cards */}
         <View style={styles.cardsContainer}>
-          {VERTICALS.map((vertical, index) => (
+          {VERTICALS.filter(v => v.id !== 'admin' || isAdmin).map((vertical, index) => (
             <TouchableOpacity
               key={vertical.id}
               onPress={() => onSelect(vertical.id)}

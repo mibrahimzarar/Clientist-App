@@ -33,7 +33,22 @@ export default function Profile() {
   const [companyName, setCompanyName] = useState<string>('')
   const [typeOfWork, setTypeOfWork] = useState<string>('')
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
+  const [currency, setCurrency] = useState<string>('USD')
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false)
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({ trips: true, tasks: true, leads: true })
+
+  const currencies = [
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' },
+    { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+    { code: 'AUD', symbol: '£', name: 'Australian Dollar' },
+    { code: 'CAD', symbol: '$', name: 'Canadian Dollar' },
+    { code: 'SGD', symbol: '$', name: 'Singapore Dollar' },
+    { code: 'JPY', symbol: '$', name: 'Japanese Yen' },
+    { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+    { code: 'PKR', symbol: 'Rs', name: 'Pakistani Rupee' },
+  ]
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
   const [currentVertical, setCurrentVertical] = useState<string | null>(null)
 
@@ -67,7 +82,7 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('company_name, company_logo, type_of_work')
+        .select('company_name, company_logo, type_of_work, currency')
         .eq('id', user.id)
         .single()
 
@@ -79,6 +94,7 @@ export default function Profile() {
         setCompanyName(data.company_name || '')
         setCompanyLogo(data.company_logo || null)
         setTypeOfWork(data.type_of_work || '')
+        setCurrency(data.currency || 'USD')
       }
 
       // Load notification preferences
@@ -148,6 +164,7 @@ export default function Profile() {
           company_name: companyName,
           company_logo: logoUrl || companyLogo,
           type_of_work: typeOfWork,
+          currency: currency,
           updated_at: new Date().toISOString(),
         })
 
@@ -189,6 +206,12 @@ export default function Profile() {
       description: 'Manage push notifications',
       onPress: () => setShowNotificationsModal(true),
     },
+    ...(currentVertical === 'freelancer' || currentVertical === 'travel_agent' ? [{
+      icon: 'cash-outline',
+      title: 'Currency',
+      description: `Selected: ${currency}`,
+      onPress: () => setShowCurrencyModal(true),
+    }] : []),
     {
       icon: 'swap-horizontal-outline',
       title: 'Change Vertical',
@@ -325,6 +348,70 @@ export default function Profile() {
         </View>
 
       </ScrollView>
+
+      {/* Currency Modal */}
+      <Modal
+        visible={showCurrencyModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCurrencyModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowCurrencyModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Currency</Text>
+                  <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                    <Ionicons name="close" size={24} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+                
+                <ScrollView style={{ maxHeight: 400 }}>
+                  {currencies.map((curr) => (
+                    <TouchableOpacity
+                      key={curr.code}
+                      style={[
+                        styles.currencyItem,
+                        currency === curr.code && styles.currencyItemSelected
+                      ]}
+                      onPress={() => {
+                        setCurrency(curr.code)
+                        setShowCurrencyModal(false)
+                        // Directly call saveProfile with the new currency value
+                        // We need to update the state first, but saveProfile uses state which might be stale in this closure
+                        // So better to update state and let useEffect trigger save, or pass param to saveProfile
+                        
+                        // Let's manually update the DB here to be sure, then update local state
+                        const updateCurrency = async () => {
+                            try {
+                                const { data: { user } } = await supabase.auth.getUser()
+                                if (user) {
+                                    await supabase.from('profiles').update({ currency: curr.code }).eq('id', user.id)
+                                }
+                            } catch (e) { console.error(e) }
+                        }
+                        updateCurrency()
+                      }}
+                    >
+                      <View style={styles.currencyInfo}>
+                        <Text style={styles.currencySymbol}>{curr.symbol}</Text>
+                        <View>
+                          <Text style={styles.currencyCode}>{curr.code}</Text>
+                          <Text style={styles.currencyName}>{curr.name}</Text>
+                        </View>
+                      </View>
+                      {currency === curr.code && (
+                        <Ionicons name="checkmark" size={20} color="#4F46E5" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* Notifications Modal */}
       <Modal
@@ -811,6 +898,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  currencyItemSelected: {
+    backgroundColor: '#EEF2FF',
+  },
+  currencyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#4F46E5',
+    width: 40,
+    textAlign: 'center',
+  },
+  currencyCode: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  currencyName: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   toggleInfo: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useClients } from '../../../hooks/useTravelAgent'
+import { supabase } from '../../../lib/supabase'
 
 export function EarningsWidget() {
     const { data: clientsData, refetch } = useClients(1, 1000) // Fetch all clients to get earnings
@@ -17,11 +18,45 @@ export function EarningsWidget() {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
     const [showMonthPicker, setShowMonthPicker] = useState(false)
     const [showYearPicker, setShowYearPicker] = useState(false)
+    const [currencySymbol, setCurrencySymbol] = useState('$')
 
     // Refetch clients when component mounts or dashboard is focused
     React.useEffect(() => {
         refetch()
+        fetchCurrency()
     }, [])
+
+    const fetchCurrency = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('currency')
+                .eq('id', user.id)
+                .single()
+
+            if (data?.currency) {
+                const currencies = [
+                    { code: 'USD', symbol: '$' },
+                    { code: 'EUR', symbol: '€' },
+                    { code: 'GBP', symbol: '£' },
+                    { code: 'INR', symbol: '₹' },
+                    { code: 'AUD', symbol: '£' },
+                    { code: 'CAD', symbol: '$' },
+                    { code: 'SGD', symbol: '$' },
+                    { code: 'JPY', symbol: '$' },
+                    { code: 'CNY', symbol: '¥' },
+                    { code: 'PKR', symbol: 'Rs' },
+                ]
+                const found = currencies.find(c => c.code === data.currency)
+                if (found) setCurrencySymbol(found.symbol)
+            }
+        } catch (error) {
+            console.log('Error fetching currency:', error)
+        }
+    }
 
     // Calculate earnings from completed clients
     const earningsData = useMemo(() => {
@@ -76,14 +111,14 @@ export function EarningsWidget() {
     }
 
     const formatEarnings = (amount: number): string => {
-        if (amount === 0) return '0'
+        if (amount === 0) return `${currencySymbol}0`
         if (amount >= 1000000) {
-            return Math.floor(amount / 1000000) + 'M'
+            return `${currencySymbol}` + Math.floor(amount / 1000000) + 'M'
         }
         if (amount >= 1000) {
-            return Math.floor(amount / 1000) + 'k'
+            return `${currencySymbol}` + Math.floor(amount / 1000) + 'k'
         }
-        return amount.toFixed(0)
+        return `${currencySymbol}` + amount.toFixed(0)
     }
 
     return (
