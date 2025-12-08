@@ -1,128 +1,144 @@
-import React from 'react'
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { supabase } from '../../lib/supabase'
-import { Ionicons } from '@expo/vector-icons'
+import React, { useState } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native'
 import { router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { supabase } from '../../lib/supabase'
+import { useAdminDashboardSummary } from '../../hooks/useAdmin'
+import AdminStatsWidget from '../widgets/admin/AdminStatsWidget'
+import AdminUsersWidget from '../widgets/admin/AdminUsersWidget'
 
 export default function AdminDashboard() {
+  const insets = useSafeAreaInsets()
+  const { data: summaryData } = useAdminDashboardSummary()
+  const [adminProfile, setAdminProfile] = useState<string | null>(null)
+
   const signOut = async () => {
     await supabase.auth.signOut()
+    router.replace('/(auth)/sign-in')
+  }
+
+  // Fetch admin profile
+  React.useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('company_logo, avatar_url')
+          .eq('id', user.id)
+          .single()
+
+        if (data) {
+          setAdminProfile(data.company_logo || data.avatar_url)
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching profile:', error)
+    }
+  }
+
+  const stats = summaryData?.data || {
+    total_users: 0,
+    active_users: 0,
+    total_revenue: 0,
+    new_users_today: 0
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Admin Dashboard</Text>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Pressable onPress={() => router.push('/(app)/profile')} style={styles.signOutButton}>
-                <Ionicons name="person-circle-outline" size={24} color="#4B5563" />
-            </Pressable>
-            <Pressable onPress={signOut} style={styles.signOutButton}>
-                <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-            </Pressable>
-        </View>
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>System Overview</Text>
-          <Text style={styles.cardText}>Welcome to the Admin Panel.</Text>
-          <Text style={styles.cardText}>Here you can manage users and system settings.</Text>
-        </View>
-
-        {/* Placeholder for user management */}
-        <View style={styles.grid}>
-          <View style={styles.gridItem}>
-             <Ionicons name="people" size={32} color="#4F46E5" />
-             <Text style={styles.gridLabel}>Users</Text>
-             <Text style={styles.gridValue}>--</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.name}>Admin</Text>
           </View>
-          <View style={styles.gridItem}>
-             <Ionicons name="stats-chart" size={32} color="#10B981" />
-             <Text style={styles.gridLabel}>Activity</Text>
-             <Text style={styles.gridValue}>--</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
+              <Image
+                source={{ uri: adminProfile || 'https://ui-avatars.com/api/?name=Admin&background=4F46E5&color=fff' }}
+                style={styles.profileImage}
+              />
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Stats Widget */}
+        <AdminStatsWidget
+          totalUsers={stats.total_users}
+          activeUsers={stats.active_users}
+          totalRevenue={stats.total_revenue}
+          newUsers={stats.new_users_today}
+        />
+
+        {/* Users Widget */}
+        <AdminUsersWidget />
+
       </ScrollView>
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#F3F4F6',
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    marginBottom: 30,
+    paddingHorizontal: 4,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  greeting: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  name: {
+    fontSize: 28,
     color: '#111827',
+    fontWeight: '800',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileButton: {
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderRadius: 22,
+  },
+  profileImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   signOutButton: {
     padding: 8,
-  },
-  content: {
-    padding: 20,
-  },
-  card: {
     backgroundColor: '#fff',
-    padding: 20,
     borderRadius: 12,
-    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  cardText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  grid: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  gridItem: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  gridLabel: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4B5563',
-  },
-  gridValue: {
-    marginTop: 4,
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
+  }
 })
