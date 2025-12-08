@@ -43,7 +43,7 @@ export default function TravelAgentClientDetail() {
           .select('currency')
           .eq('id', user.id)
           .single()
-        
+
         if (data?.currency) {
           const currencies = [
             { code: 'USD', symbol: '$' },
@@ -375,7 +375,7 @@ export default function TravelAgentClientDetail() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-text" size={20} color="#F59E0B" />
-            <Text style={styles.cardTitle}>Notes</Text>
+            <Text style={styles.cardTitle}>Details</Text>
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.notesText}>{client.notes}</Text>
@@ -468,7 +468,7 @@ export default function TravelAgentClientDetail() {
                 <View style={styles.earningTotalRow}>
                   <Text style={styles.earningTotalLabel}>Total Earnings:</Text>
                   <Text style={styles.earningTotalAmount}>
-                     {currencySymbol}{earnings.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                    {currencySymbol}{earnings.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
                   </Text>
                 </View>
               </View>

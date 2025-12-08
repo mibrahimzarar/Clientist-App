@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'rea
 import { router, Link } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '../../../src/lib/supabase'
+import NotificationCenter from '../../../src/components/notifications/NotificationCenter'
 
 export default function ServiceProviderDashboard() {
   const signOut = async () => {
+    // ... same signOut logic ...
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -92,9 +94,12 @@ export default function ServiceProviderDashboard() {
           <Text style={styles.title}>Service Provider Portal</Text>
           <Text style={styles.subtitle}>Manage your service business</Text>
         </View>
-        <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
-          <Ionicons name="log-out" size={20} color="#6B7280" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <NotificationCenter />
+          <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
+            <Ionicons name="person-circle-outline" size={32} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -162,6 +167,21 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   signOutButton: {
     padding: 12,

@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { useAdminDashboardSummary } from '../../hooks/useAdmin'
 import AdminStatsWidget from '../widgets/admin/AdminStatsWidget'
 import AdminUsersWidget from '../widgets/admin/AdminUsersWidget'
+import { FeatureSuggestionsWidget } from '../widgets/admin/FeatureSuggestionsWidget'
 
 export default function AdminDashboard() {
   const insets = useSafeAreaInsets()
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
         {/* Header */}
@@ -72,13 +73,14 @@ export default function AdminDashboard() {
         {/* Stats Widget */}
         <AdminStatsWidget
           totalUsers={stats.total_users}
-          activeUsers={stats.active_users}
-          totalRevenue={stats.total_revenue}
           newUsers={stats.new_users_today}
         />
 
         {/* Users Widget */}
         <AdminUsersWidget />
+
+        {/* Feature Suggestions Widget */}
+        <FeatureSuggestionsWidget />
 
       </ScrollView>
     </View>
@@ -98,6 +100,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 30,
     marginBottom: 30,
     paddingHorizontal: 4,
   },

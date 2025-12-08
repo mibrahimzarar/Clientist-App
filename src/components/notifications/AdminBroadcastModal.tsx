@@ -14,6 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useCreateAnnouncement, useAnnouncements } from '../../hooks/useNotifications'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../../lib/supabase'
 
 interface AdminBroadcastModalProps {
     visible: boolean
@@ -25,6 +27,7 @@ export default function AdminBroadcastModal({ visible, onClose }: AdminBroadcast
     const [message, setMessage] = useState('')
     const [targetAudience, setTargetAudience] = useState('all') // 'all', 'freelancer', etc.
 
+    const queryClient = useQueryClient()
     const { mutate: sendAnnouncement, isPending: isSending } = useCreateAnnouncement()
     const { data: historyData, isLoading: isLoadingHistory } = useAnnouncements()
 
@@ -51,13 +54,52 @@ export default function AdminBroadcastModal({ visible, onClose }: AdminBroadcast
         )
     }
 
+    const handleDelete = (announcementId: string) => {
+        Alert.alert(
+            'Delete Announcement',
+            'Are you sure you want to delete this announcement? This will also remove all user notifications related to it.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase
+                                .from('app_announcements')
+                                .delete()
+                                .eq('id', announcementId)
+
+                            if (error) throw error
+
+                            // Invalidate queries to refresh the list
+                            queryClient.invalidateQueries({ queryKey: ['announcements'] })
+                            Alert.alert('Success', 'Announcement deleted')
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete announcement')
+                            console.error(error)
+                        }
+                    }
+                }
+            ]
+        )
+    }
+
     const renderHistoryItem = ({ item }: { item: any }) => (
         <View style={styles.historyItem}>
             <View style={styles.historyHeader}>
-                <Text style={styles.historyTitle}>{item.title}</Text>
-                <Text style={styles.historyDate}>
-                    {new Date(item.created_at).toLocaleDateString()}
-                </Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.historyTitle}>{item.title}</Text>
+                    <Text style={styles.historyDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                    </Text>
+                </View>
+                <TouchableOpacity
+                    onPress={() => handleDelete(item.id)}
+                    style={styles.deleteButton}
+                >
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
             </View>
             <Text style={styles.historyMessage} numberOfLines={2}>{item.message}</Text>
             <View style={styles.audienceBadge}>
@@ -72,6 +114,7 @@ export default function AdminBroadcastModal({ visible, onClose }: AdminBroadcast
             animationType="slide"
             transparent={true}
             onRequestClose={onClose}
+            statusBarTranslucent
         >
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
@@ -189,6 +232,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 24,
         height: '90%',
         padding: 24,
+        paddingBottom: 60,
     },
     header: {
         flexDirection: 'row',
@@ -315,7 +359,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#4B5563',
         lineHeight: 18,
-        marginBottom: 8,
+        marginBottom: 20,
     },
     audienceBadge: {
         alignSelf: 'flex-start',
@@ -334,5 +378,11 @@ const styles = StyleSheet.create({
         color: '#9CA3AF',
         textAlign: 'center',
         marginTop: 20
-    }
+    },
+    deleteButton: {
+        padding: 8,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 8,
+        marginLeft: 8,
+    },
 })

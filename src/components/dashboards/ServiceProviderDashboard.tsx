@@ -12,6 +12,7 @@ import { EarningsWidget } from '../widgets/serviceProvider/EarningsWidget'
 import { ServiceProviderCalendarWidget } from '../widgets/serviceProvider/ServiceProviderCalendarWidget'
 import { LeadsWidget } from '../widgets/serviceProvider/LeadsWidget'
 import { SmartRemindersWidget } from '../widgets/serviceProvider/SmartRemindersWidget'
+import NotificationCenter from '../notifications/NotificationCenter'
 
 export const ServiceProviderDashboard: React.FC = () => {
     const { data: statsData } = useSPDashboardStats()
@@ -129,12 +130,15 @@ export const ServiceProviderDashboard: React.FC = () => {
                         <Text style={styles.greeting}>Welcome back,</Text>
                         <Text style={styles.name}>{companyName}</Text>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
-                        <Image
-                            source={{ uri: companyLogo || `https://ui-avatars.com/api/?name=${companyName}&background=3B82F6&color=fff` }}
-                            style={styles.profileImage}
-                        />
-                    </TouchableOpacity>
+                    <View style={styles.headerActions}>
+                        <NotificationCenter />
+                        <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
+                            <Image
+                                source={{ uri: companyLogo || `https://ui-avatars.com/api/?name=${companyName}&background=3B82F6&color=fff` }}
+                                style={styles.profileImage}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Top Stats Widget */}
@@ -260,6 +264,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 20,
         marginTop: 40,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     greeting: {
         fontSize: 16,

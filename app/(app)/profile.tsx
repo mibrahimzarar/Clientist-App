@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { NotificationService, NotificationPreferences } from '../../src/services/NotificationService'
 import { getSelectedVertical } from '../../src/lib/verticalStorage'
 import AdminBroadcastModal from '../../src/components/notifications/AdminBroadcastModal'
+import { FeatureSuggestionModal } from '../../src/components/modals/FeatureSuggestionModal'
 
 export default function Profile() {
   const insets = useSafeAreaInsets()
@@ -52,6 +53,7 @@ export default function Profile() {
   ]
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
   const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [showFeatureSuggestion, setShowFeatureSuggestion] = useState(false)
   const [currentVertical, setCurrentVertical] = useState<string | null>(null)
 
   useEffect(() => {
@@ -233,6 +235,12 @@ export default function Profile() {
       description: `Selected: ${currency}`,
       onPress: () => setShowCurrencyModal(true),
     }] : []),
+    ...(!email.includes('admin') && companyName !== 'Admin' ? [{
+      icon: 'bulb-outline',
+      title: 'Suggest a Feature',
+      description: 'Share your ideas with us',
+      onPress: () => setShowFeatureSuggestion(true),
+    }] : []),
     {
       icon: 'swap-horizontal-outline',
       title: 'Change Vertical',
@@ -368,6 +376,51 @@ export default function Profile() {
           ))}
         </View>
 
+        {/* Danger Zone */}
+        {!(email.includes('admin') || companyName === 'Admin') && (
+          <View style={styles.dangerZone}>
+            <Text style={styles.dangerTitle}>Danger Zone</Text>
+            <View style={styles.dangerCard}>
+              <View>
+                <Text style={styles.dangerLabel}>Delete Account</Text>
+                <Text style={styles.dangerDescription}>
+                  Permanently delete your account and all data. This action cannot be undone.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => {
+                  Alert.alert(
+                    'Delete Account',
+                    'Are you absolutely sure? This action cannot be undone and will permanently delete your account and all associated data.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            setLoading(true)
+                            const { error } = await supabase.rpc('delete_user_account')
+                            if (error) throw error
+                            await supabase.auth.signOut()
+                            router.replace('/')
+                          } catch (error) {
+                            Alert.alert('Error', 'Failed to delete account: ' + (error as any).message)
+                            setLoading(false)
+                          }
+                        }
+                      }
+                    ]
+                  )
+                }}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
       </ScrollView>
 
       {/* Currency Modal */}
@@ -376,6 +429,7 @@ export default function Profile() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowCurrencyModal(false)}
+        statusBarTranslucent
       >
         <TouchableWithoutFeedback onPress={() => setShowCurrencyModal(false)}>
           <View style={styles.modalOverlay}>
@@ -440,6 +494,7 @@ export default function Profile() {
         transparent
         animationType="fade"
         onRequestClose={() => setShowNotificationsModal(false)}
+        statusBarTranslucent
       >
         <TouchableWithoutFeedback onPress={() => setShowNotificationsModal(false)}>
           <View style={styles.modalOverlay}>
@@ -671,6 +726,11 @@ export default function Profile() {
         visible={showBroadcastModal}
         onClose={() => setShowBroadcastModal(false)}
       />
+
+      <FeatureSuggestionModal
+        visible={showFeatureSuggestion}
+        onClose={() => setShowFeatureSuggestion(false)}
+      />
     </View>
   )
 }
@@ -799,8 +859,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#8B5CF6',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
     marginBottom: 8,
+  },
+  dangerZone: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 40,
+  },
+  dangerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EF4444',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  dangerCard: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  dangerLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#991B1B',
+    marginBottom: 4,
+  },
+  dangerDescription: {
+    fontSize: 13,
+    color: '#B91C1C',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  deleteButton: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
   companyNameInput: {
     fontSize: 28,
@@ -811,10 +918,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     minWidth: 200,
+    width: '100%',
     borderBottomWidth: 2,
     borderBottomColor: '#F3F4F6',
-    flexWrap: 'wrap',
-    maxWidth: '90%',
   },
   emailBadge: {
     flexDirection: 'row',

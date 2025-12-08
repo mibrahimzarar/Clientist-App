@@ -10,6 +10,7 @@ import TopStatsWidget from '../widgets/freelancer/TopStatsWidget'
 import { FreelancerCalendarWidget } from '../widgets/freelancer/FreelancerCalendarWidget'
 import { SmartRemindersWidget } from '../widgets/freelancer/SmartRemindersWidget'
 import { EarningsWidget } from '../widgets/freelancer/EarningsWidget'
+import NotificationCenter from '../notifications/NotificationCenter'
 
 const { width } = Dimensions.get('window')
 
@@ -26,7 +27,7 @@ export default function FreelancerDashboard() {
   const projects = projectsData?.data || []
   const tasks = tasksData?.data || []
   const leads = leadsData?.data || []
-  
+
   // Calculate total projects (not just active) for success percentage
   const totalProjects = (stats?.active_projects || 0) + (stats?.completed_projects || 0)
 
@@ -117,12 +118,15 @@ export default function FreelancerDashboard() {
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.name}>Freelancer</Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
-            <Image
-              source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Freelancer&background=8B5CF6&color=fff' }}
-              style={styles.profileImage}
-            />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <NotificationCenter />
+            <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
+              <Image
+                source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Freelancer&background=8B5CF6&color=fff' }}
+                style={styles.profileImage}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Top Stats Widget */}
@@ -253,6 +257,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     marginTop: 40,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   greeting: {
     fontSize: 16,

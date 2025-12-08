@@ -38,7 +38,7 @@ export async function getUsers(
             .select('*', { count: 'exact' })
 
         if (filters?.search_term) {
-            query = query.or(`full_name.ilike.%${filters.search_term}%,email.ilike.%${filters.search_term}%`)
+            query = query.or(`full_name.ilike.%${filters.search_term}%,company_name.ilike.%${filters.search_term}%,email.ilike.%${filters.search_term}%`)
         }
         if (filters?.status_filter) {
             query = query.eq('status', filters.status_filter)

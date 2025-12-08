@@ -8,6 +8,8 @@ import {
   Alert,
   RefreshControl,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { BouncingBallsLoader } from '../../../src/components/ui/BouncingBallsLoader'
 import { NotesTimeline } from '../../../src/components/notes/NotesTimeline'
@@ -125,254 +127,261 @@ export default function TravelAgentClientDetail() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // Tiny offset if needed
     >
-      {/* Header with Gradient */}
-      <LinearGradient
-        colors={getStatusColor(client.status)}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 100 }} // Add paddingBottom to ensure content is reachable
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => router.push(`/(app)/clients/${id}/edit`)} style={styles.actionButton}>
-              <Ionicons name="create" size={22} color="#fff" />
+        {/* Header with Gradient */}
+        <LinearGradient
+          colors={getStatusColor(client.status)}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <View style={styles.headerTop}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleDeleteClient} style={styles.actionButton}>
-              <Ionicons name="trash" size={22} color="#fff" />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={() => router.push(`/(app)/clients/${id}/edit`)} style={styles.actionButton}>
+                <Ionicons name="create" size={22} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDeleteClient} style={styles.actionButton}>
+                <Ionicons name="trash" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.headerContent}>
+            <View style={styles.avatarContainer}>
+              {client.profile_picture_url ? (
+                <Image
+                  source={{ uri: client.profile_picture_url }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {client.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'NA'}
+                </Text>
+              )}
+            </View>
+            <Text style={styles.clientName}>{client.full_name || 'Unknown Client'}</Text>
+            <View style={styles.badgesRow}>
+              <TouchableOpacity
+                style={styles.statusBadge}
+                onPress={() => setShowStatusPicker(!showStatusPicker)}
+              >
+                <Text style={styles.badgeText}>{client.status?.replace('_', ' ') || 'Unknown'}</Text>
+                <Ionicons name="chevron-down" size={12} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.priorityBadge}
+                onPress={() => setShowPriorityPicker(!showPriorityPicker)}
+              >
+                <LinearGradient
+                  colors={getPriorityColor(client.priority_tag)}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.priorityGradient}
+                >
+                  <Text style={styles.badgeText}>{client.priority_tag || 'normal'}</Text>
+                  <Ionicons name="chevron-down" size={12} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Status Picker Modal */}
+        {showStatusPicker && (
+          <View style={styles.pickerContainer}>
+            {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={styles.pickerItem}
+                onPress={() => handleStatusChange(status)}
+              >
+                <View style={[styles.pickerDot, { backgroundColor: getStatusColor(status)[0] }]} />
+                <Text style={styles.pickerText}>{status?.replace('_', ' ') || status}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Priority Picker Modal */}
+        {showPriorityPicker && (
+          <View style={styles.pickerContainer}>
+            {(['normal', 'priority', 'urgent', 'vip'] as PriorityTag[]).map((priority) => (
+              <TouchableOpacity
+                key={priority}
+                style={styles.pickerItem}
+                onPress={() => handlePriorityChange(priority)}
+              >
+                <View style={[styles.pickerDot, { backgroundColor: getPriorityColor(priority)[0] }]} />
+                <Text style={styles.pickerText}>{priority}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Contact Information Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="call" size={20} color="#4F46E5" />
+            <Text style={styles.cardTitle}>Contact Information</Text>
+          </View>
+          <View style={styles.cardContent}>
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={18} color="#6B7280" />
+              <Text style={styles.infoLabel}>Phone</Text>
+              <Text style={styles.infoValue}>{client.phone_number}</Text>
+            </View>
+            {client.email && (
+              <View style={styles.infoRow}>
+                <Ionicons name="mail-outline" size={18} color="#6B7280" />
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{client.email}</Text>
+              </View>
+            )}
+            <View style={styles.infoRow}>
+              <Ionicons name="location-outline" size={18} color="#6B7280" />
+              <Text style={styles.infoLabel}>Country</Text>
+              <Text style={styles.infoValue}>{client.country}</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.headerContent}>
-          <View style={styles.avatarContainer}>
-            {client.profile_picture_url ? (
-              <Image
-                source={{ uri: client.profile_picture_url }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <Text style={styles.avatarText}>
-                {client.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'NA'}
-              </Text>
-            )}
+        {/* Package Details Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name={getPackageIcon(client.package_type)} size={20} color="#10B981" />
+            <Text style={styles.cardTitle}>Package Details</Text>
           </View>
-          <Text style={styles.clientName}>{client.full_name || 'Unknown Client'}</Text>
-          <View style={styles.badgesRow}>
+          <View style={styles.cardContent}>
+            <View style={styles.infoRow}>
+              <Ionicons name="briefcase-outline" size={18} color="#6B7280" />
+              <Text style={styles.infoLabel}>Type</Text>
+              <Text style={styles.infoValue}>{client.package_type?.replace('_', ' ') || 'Unknown'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="flag-outline" size={18} color="#6B7280" />
+              <Text style={styles.infoLabel}>Source</Text>
+              <Text style={styles.infoValue}>{client.lead_source?.replace('_', ' ') || 'Unknown'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar-outline" size={18} color="#6B7280" />
+              <Text style={styles.infoLabel}>Created</Text>
+              <Text style={styles.infoValue}>{new Date(client.created_at).toLocaleDateString()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Notes Section */}
+        {client.notes && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="document-text" size={20} color="#F59E0B" />
+              <Text style={styles.cardTitle}>Notes</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.notesText}>{client.notes}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.actionsSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
             <TouchableOpacity
-              style={styles.statusBadge}
-              onPress={() => setShowStatusPicker(!showStatusPicker)}
-            >
-              <Text style={styles.badgeText}>{client.status?.replace('_', ' ') || 'Unknown'}</Text>
-              <Ionicons name="chevron-down" size={12} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.priorityBadge}
-              onPress={() => setShowPriorityPicker(!showPriorityPicker)}
+              style={styles.actionCard}
+              onPress={() => router.push(`/(verticals)/travel-agent/trips?clientId=${id}`)}
             >
               <LinearGradient
-                colors={getPriorityColor(client.priority_tag)}
+                colors={['#3B82F6', '#2563EB']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.priorityGradient}
+                style={styles.actionGradient}
               >
-                <Text style={styles.badgeText}>{client.priority_tag || 'normal'}</Text>
-                <Ionicons name="chevron-down" size={12} color="#fff" />
+                <Ionicons name="airplane" size={28} color="#fff" />
+                <Text style={styles.actionText}>Travel Info</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push(`/(app)/clients/${id}/reminders`)}
+            >
+              <LinearGradient
+                colors={['#EF4444', '#DC2626']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="alarm" size={28} color="#fff" />
+                <Text style={styles.actionText}>Reminders</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push(`/(app)/clients/${id}/payments`)}
+            >
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="card" size={28} color="#fff" />
+                <Text style={styles.actionText}>Payments</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push(`/(app)/clients/${id}/tasks`)}
+            >
+              <LinearGradient
+                colors={['#4F46E5', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="checkbox" size={28} color="#fff" />
+                <Text style={styles.actionText}>Tasks</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push(`/(app)/clients/${id}/files`)}
+            >
+              <LinearGradient
+                colors={['#8B5CF6', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="folder" size={28} color="#fff" />
+                <Text style={styles.actionText}>Documents</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
-      </LinearGradient>
 
-      {/* Status Picker Modal */}
-      {showStatusPicker && (
-        <View style={styles.pickerContainer}>
-          {(['in_progress', 'rejected', 'completed'] as ClientStatus[]).map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={styles.pickerItem}
-              onPress={() => handleStatusChange(status)}
-            >
-              <View style={[styles.pickerDot, { backgroundColor: getStatusColor(status)[0] }]} />
-              <Text style={styles.pickerText}>{status?.replace('_', ' ') || status}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* Priority Picker Modal */}
-      {showPriorityPicker && (
-        <View style={styles.pickerContainer}>
-          {(['normal', 'priority', 'urgent', 'vip'] as PriorityTag[]).map((priority) => (
-            <TouchableOpacity
-              key={priority}
-              style={styles.pickerItem}
-              onPress={() => handlePriorityChange(priority)}
-            >
-              <View style={[styles.pickerDot, { backgroundColor: getPriorityColor(priority)[0] }]} />
-              <Text style={styles.pickerText}>{priority}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* Contact Information Card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="call" size={20} color="#4F46E5" />
-          <Text style={styles.cardTitle}>Contact Information</Text>
-        </View>
-        <View style={styles.cardContent}>
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={18} color="#6B7280" />
-            <Text style={styles.infoLabel}>Phone</Text>
-            <Text style={styles.infoValue}>{client.phone_number}</Text>
-          </View>
-          {client.email && (
-            <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={18} color="#6B7280" />
-              <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{client.email}</Text>
-            </View>
-          )}
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={18} color="#6B7280" />
-            <Text style={styles.infoLabel}>Country</Text>
-            <Text style={styles.infoValue}>{client.country}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Package Details Card */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name={getPackageIcon(client.package_type)} size={20} color="#10B981" />
-          <Text style={styles.cardTitle}>Package Details</Text>
-        </View>
-        <View style={styles.cardContent}>
-          <View style={styles.infoRow}>
-            <Ionicons name="briefcase-outline" size={18} color="#6B7280" />
-            <Text style={styles.infoLabel}>Type</Text>
-            <Text style={styles.infoValue}>{client.package_type?.replace('_', ' ') || 'Unknown'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="flag-outline" size={18} color="#6B7280" />
-            <Text style={styles.infoLabel}>Source</Text>
-            <Text style={styles.infoValue}>{client.lead_source?.replace('_', ' ') || 'Unknown'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={18} color="#6B7280" />
-            <Text style={styles.infoLabel}>Created</Text>
-            <Text style={styles.infoValue}>{new Date(client.created_at).toLocaleDateString()}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Notes Section */}
-      {client.notes && (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="document-text" size={20} color="#F59E0B" />
-            <Text style={styles.cardTitle}>Notes</Text>
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.notesText}>{client.notes}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Quick Actions */}
-      <View style={styles.actionsSection}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(verticals)/travel-agent/trips?clientId=${id}`)}
-          >
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="airplane" size={28} color="#fff" />
-              <Text style={styles.actionText}>Travel Info</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(app)/clients/${id}/reminders`)}
-          >
-            <LinearGradient
-              colors={['#EF4444', '#DC2626']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="alarm" size={28} color="#fff" />
-              <Text style={styles.actionText}>Reminders</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(app)/clients/${id}/payments`)}
-          >
-            <LinearGradient
-              colors={['#10B981', '#059669']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="card" size={28} color="#fff" />
-              <Text style={styles.actionText}>Payments</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(app)/clients/${id}/tasks`)}
-          >
-            <LinearGradient
-              colors={['#4F46E5', '#7C3AED']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="checkbox" size={28} color="#fff" />
-              <Text style={styles.actionText}>Tasks</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push(`/(app)/clients/${id}/files`)}
-          >
-            <LinearGradient
-              colors={['#8B5CF6', '#7C3AED']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="folder" size={28} color="#fff" />
-              <Text style={styles.actionText}>Documents</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Notes Timeline */}
-      <NotesTimeline clientId={id as string} />
-    </ScrollView>
+        {/* Notes Timeline */}
+        <NotesTimeline clientId={id as string} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

@@ -45,15 +45,8 @@ export default function NewClientPage() {
       })
 
       if (!result.canceled) {
-        setUploading(true)
-        try {
-          const publicUrl = await freelancerService.uploadImage(result.assets[0].uri, 'avatars')
-          setFormData({ ...formData, profile_picture_url: publicUrl })
-        } catch (error) {
-          Alert.alert('Error', 'Failed to upload image')
-        } finally {
-          setUploading(false)
-        }
+        // Just set the temp URI - we'll save it locally when creating the client
+        setFormData({ ...formData, profile_picture_url: result.assets[0].uri })
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image')
@@ -67,10 +60,34 @@ export default function NewClientPage() {
     }
 
     try {
-      await createClientMutation.mutateAsync({
+      // Create client first
+      const newClient = await createClientMutation.mutateAsync({
         ...formData,
+        profile_picture_url: '', // Will update after saving image
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
       })
+
+      // Save image locally if one was selected
+      if (formData.profile_picture_url && newClient?.id) {
+        setUploading(true)
+        try {
+          const { saveClientImage } = await import('../../../../src/utils/localImageStorage')
+          const localUri = await saveClientImage(newClient.id, formData.profile_picture_url)
+
+          // Update client with local URI
+          const { supabase } = await import('../../../../src/lib/supabase')
+          await supabase
+            .from('freelancer_clients')
+            .update({ profile_picture_url: localUri })
+            .eq('id', newClient.id)
+        } catch (error) {
+          console.error('Image save error:', error)
+          // Continue even if image save fails
+        } finally {
+          setUploading(false)
+        }
+      }
+
       Alert.alert('Success', 'Client created successfully', [
         { text: 'OK', onPress: () => router.back() }
       ])

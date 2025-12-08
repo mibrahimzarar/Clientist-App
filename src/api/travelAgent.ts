@@ -520,67 +520,28 @@ function getBucketNameForFileType(fileType: string): string {
   }
 }
 
-// Upload client profile image
+// Upload client profile image to local storage
 export async function uploadClientProfileImage(
   clientId: string,
   imageUri: string,
   fileName: string
 ): Promise<ApiResponse<string>> {
   try {
-    console.log('Starting image upload for client:', clientId)
+    // Import local storage utility
+    const { saveClientImage } = await import('../utils/localImageStorage')
+
+    console.log('Saving image locally for client:', clientId)
     console.log('Image URI:', imageUri)
 
-    const fileExt = fileName.split('.').pop()?.toLowerCase() || 'jpg'
-    const filePath = `${clientId}/profile_${Date.now()}.${fileExt}`
-    console.log('Upload path:', filePath)
+    // Save image to local storage
+    const localUri = await saveClientImage(clientId, imageUri)
 
-    // Map file extensions to proper MIME types
-    const mimeTypes: { [key: string]: string } = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'heic': 'image/heic',
-      'heif': 'image/heif',
-    }
+    console.log('Image saved locally:', localUri)
 
-    const mimeType = mimeTypes[fileExt] || 'image/jpeg'
-    console.log('MIME type:', mimeType)
-
-    // Read the file as ArrayBuffer for React Native
-    const response = await fetch(imageUri)
-    const arrayBuffer = await response.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-
-    console.log('File read, size:', uint8Array.length, 'bytes')
-
-    // Upload to Supabase Storage using ArrayBuffer
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('client-profiles')
-      .upload(filePath, uint8Array, {
-        contentType: mimeType,
-        upsert: true
-      })
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      throw uploadError
-    }
-
-    console.log('Upload successful:', uploadData)
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('client-profiles')
-      .getPublicUrl(filePath)
-
-    console.log('Public URL:', publicUrl)
-
-    // Update client record with profile picture URL
+    // Update client record with local file URI
     const { error: updateError } = await supabase
       .from('clients')
-      .update({ profile_picture_url: publicUrl })
+      .update({ profile_picture_url: localUri })
       .eq('id', clientId)
 
     if (updateError) {
@@ -591,13 +552,13 @@ export async function uploadClientProfileImage(
     console.log('Client record updated successfully')
 
     return {
-      data: publicUrl,
+      data: localUri,
       success: true
     }
   } catch (error) {
-    console.error('Image upload failed:', error)
+    console.error('Image save failed:', error)
     return {
-      error: error instanceof Error ? error.message : 'Failed to upload profile image',
+      error: error instanceof Error ? error.message : 'Failed to save profile image',
       success: false
     }
   }

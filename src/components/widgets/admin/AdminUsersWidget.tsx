@@ -1,40 +1,52 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { AdminUser } from '../../../types/admin'
 import { useUsers, useUpdateUserStatus } from '../../../hooks/useAdmin'
 
 export default function AdminUsersWidget() {
     const [searchTerm, setSearchTerm] = useState('')
-    const { data, isLoading, refetch } = useUsers(1, 10, { search_term: searchTerm })
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [refreshing, setRefreshing] = useState(false)
+    const { data, isLoading, refetch } = useUsers(1, 10, { search_term: debouncedSearch })
     const { mutate: updateUserStatus } = useUpdateUserStatus()
+
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm)
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [searchTerm])
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        await refetch()
+        setRefreshing(false)
+    }
+
+
 
     const users = data?.data?.data || []
     const apiError = data?.error
 
-    const handleStatusToggle = (userId: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'active' ? 'banned' : 'active'
-        updateUserStatus({ userId, status: newStatus })
-    }
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return '#10B981'
-            case 'banned': return '#EF4444'
-            default: return '#9CA3AF'
-        }
-    }
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>All Users</Text>
                 <View style={styles.headerActions}>
-                    <TouchableOpacity onPress={() => refetch()} style={styles.iconButton}>
-                        <Ionicons name="refresh" size={20} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Ionicons name="filter" size={20} color="#4F46E5" />
+                    <TouchableOpacity
+                        onPress={handleRefresh}
+                        style={[styles.iconButton, refreshing && styles.iconButtonActive]}
+                        disabled={refreshing}
+                    >
+                        <Ionicons
+                            name="refresh"
+                            size={20}
+                            color={refreshing ? "#8B5CF6" : "#4F46E5"}
+                        />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -63,7 +75,11 @@ export default function AdminUsersWidget() {
                     <ActivityIndicator color="#4F46E5" />
                 </View>
             ) : (
-                <View style={styles.list}>
+                <ScrollView
+                    style={styles.list}
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                >
                     {users.map((user) => {
                         // Prioritize company name/logo as those are what users set in profile
                         const displayName = user.company_name || user.full_name || user.email?.split('@')[0] || 'Unknown User'
@@ -85,15 +101,6 @@ export default function AdminUsersWidget() {
                                         <Text style={styles.userEmail}>{user.email}</Text>
                                     </View>
                                 </View>
-
-                                <TouchableOpacity
-                                    onPress={() => handleStatusToggle(user.id, user.status)}
-                                    style={[styles.statusBadge, { backgroundColor: `${getStatusColor(user.status)}20` }]}
-                                >
-                                    <Text style={[styles.statusText, { color: getStatusColor(user.status) }]}>
-                                        {user.status}
-                                    </Text>
-                                </TouchableOpacity>
                             </View>
                         )
                     })}
@@ -104,7 +111,7 @@ export default function AdminUsersWidget() {
                             <Text style={styles.debugText}>(Table: profiles)</Text>
                         </View>
                     )}
-                </View>
+                </ScrollView>
             )}
         </View>
     )
@@ -115,6 +122,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 24,
         padding: 20,
+        marginBottom: 25,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
@@ -140,6 +148,9 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#EEF2FF',
         borderRadius: 12,
+    },
+    iconButtonActive: {
+        backgroundColor: '#DDD6FE',
     },
     errorContainer: {
         padding: 20,
@@ -196,7 +207,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     list: {
-        gap: 12,
+        maxHeight: 360, // ~4 user cards (each ~90px height)
     },
     userCard: {
         flexDirection: 'row',

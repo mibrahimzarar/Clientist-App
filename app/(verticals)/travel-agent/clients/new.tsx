@@ -27,7 +27,7 @@ const packageOptions = [
 ]
 
 const leadSourceOptions = [
-  { value: 'facebook', label: 'Facebook', icon: 'logo-facebook' },
+  { value: 'facebook', label: 'Social Media', icon: 'logo-facebook' },
   { value: 'referral', label: 'Referral', icon: 'people' },
   { value: 'walk_in', label: 'Walk-in', icon: 'walk' },
   { value: 'website', label: 'Website', icon: 'globe' },
@@ -420,7 +420,7 @@ export default function NewClient() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-text" size={24} color="#4F46E5" />
-            <Text style={styles.cardTitle}>Additional Notes</Text>
+            <Text style={styles.cardTitle}>Additional Details</Text>
           </View>
 
           <TextInput

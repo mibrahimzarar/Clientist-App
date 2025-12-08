@@ -12,6 +12,8 @@ import { TravelAgentCalendarWidget } from '../widgets/travelAgent/TravelAgentCal
 import TopStatsWidget from '../widgets/travelAgent/TopStatsWidget'
 import { SmartRemindersWidget } from '../widgets/travelAgent/SmartRemindersWidget'
 import { EarningsWidget } from '../widgets/travelAgent/EarningsWidget'
+import { BouncingBallsLoader } from '../ui/BouncingBallsLoader'
+import NotificationCenter from '../notifications/NotificationCenter'
 
 const { width } = Dimensions.get('window')
 
@@ -42,7 +44,7 @@ export default function TravelAgentDashboard() {
         const today = new Date().toDateString()
         return taskDate === today
     }).length || 0
-    
+
     if (todayTaskCount > 0) {
         todaysNotifications.push({
             id: 'tasks',
@@ -61,7 +63,7 @@ export default function TravelAgentDashboard() {
         const today = new Date().toDateString()
         return travelDate === today
     }).length || 0
-    
+
     if (todayTravelCount > 0) {
         todaysNotifications.push({
             id: 'travels',
@@ -129,7 +131,7 @@ export default function TravelAgentDashboard() {
     if (dashboardLoading && !dashboardData) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Loading dashboard...</Text>
+                <BouncingBallsLoader size={12} color="#4F46E5" />
             </View>
         )
     }
@@ -144,12 +146,15 @@ export default function TravelAgentDashboard() {
                         <Text style={styles.greeting}>Welcome back,</Text>
                         <Text style={styles.name}>Agent</Text>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
-                        <Image
-                            source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Travel+Agent&background=0D8ABC&color=fff' }}
-                            style={styles.profileImage}
-                        />
-                    </TouchableOpacity>
+                    <View style={styles.headerActions}>
+                        <NotificationCenter />
+                        <TouchableOpacity onPress={() => router.push('/(app)/profile')} style={styles.profileButton}>
+                            <Image
+                                source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Travel+Agent&background=0D8ABC&color=fff' }}
+                                style={styles.profileImage}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Top Stats Widget */}
@@ -305,6 +310,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 20,
         marginTop: 40,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     greeting: {
         fontSize: 16,
