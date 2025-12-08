@@ -58,7 +58,8 @@ export function FreelancerCalendarWidget() {
             // Create invoice dates set (due dates)
             const invoiceDates = new Set<string>()
             invoicesData?.data?.forEach(invoice => {
-                if (invoice.due_date) {
+                // Only show unpaid or overdue invoices
+                if (invoice.due_date && ['unpaid', 'overdue', 'sent'].includes(invoice.status)) {
                     const date = new Date(invoice.due_date)
                     date.setHours(0, 0, 0, 0)
                     invoiceDates.add(date.toDateString())

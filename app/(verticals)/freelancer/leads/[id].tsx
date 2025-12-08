@@ -107,14 +107,14 @@ export default function FreelancerLeadDetailScreen() {
                         </View>
                     )}
 
-                    {lead.phone && (
+                    {lead.phone_number && (
                         <View style={styles.infoRow}>
                             <View style={styles.iconContainer}>
                                 <Ionicons name="call" size={20} color="#F59E0B" />
                             </View>
                             <View style={styles.infoContent}>
                                 <Text style={styles.infoLabel}>Phone</Text>
-                                <Text style={styles.infoValue}>{lead.phone}</Text>
+                                <Text style={styles.infoValue}>{lead.phone_number}</Text>
                             </View>
                         </View>
                     )}

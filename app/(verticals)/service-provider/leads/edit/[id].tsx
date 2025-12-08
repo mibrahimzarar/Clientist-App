@@ -33,7 +33,6 @@ export default function EditLeadScreen() {
         source: 'phone_call' as SPLeadSource,
         status: 'new_lead' as SPLeadStatus,
         service_interested: '',
-        expected_value: '',
         next_follow_up: new Date(),
         notes: ''
     })
@@ -49,7 +48,6 @@ export default function EditLeadScreen() {
                 source: lead.source || 'phone_call',
                 status: lead.status || 'new_lead',
                 service_interested: lead.service_interested || '',
-                expected_value: lead.expected_value?.toString() || '',
                 next_follow_up: lead.next_follow_up ? new Date(lead.next_follow_up) : new Date(),
                 notes: lead.notes || ''
             })
@@ -67,7 +65,6 @@ export default function EditLeadScreen() {
                 id,
                 updates: {
                     ...formData,
-                    expected_value: formData.expected_value ? parseFloat(formData.expected_value) : undefined,
                     next_follow_up: formData.next_follow_up.toISOString()
                 }
             })
@@ -191,18 +188,6 @@ export default function EditLeadScreen() {
                             onChangeText={(text) => setFormData({ ...formData, service_interested: text })}
                             placeholder="e.g. AC Repair, Installation"
                             placeholderTextColor="#9CA3AF"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Expected Value</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.expected_value}
-                            onChangeText={(text) => setFormData({ ...formData, expected_value: text })}
-                            placeholder="0.00"
-                            placeholderTextColor="#9CA3AF"
-                            keyboardType="numeric"
                         />
                     </View>
                 </View>

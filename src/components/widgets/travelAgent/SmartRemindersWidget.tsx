@@ -24,7 +24,13 @@ export function SmartRemindersWidget() {
         ...travels.map(t => ({ ...t, itemType: 'trip' as const, date: t.departure_date, title: t.full_name })),
         ...tasks.map(t => ({ ...t, itemType: 'task' as const, date: t.due_date, title: t.title })),
         ...leads.filter(l => l.follow_up_date).map(l => ({ ...l, itemType: 'lead' as const, date: l.follow_up_date!, title: l.full_name }))
-    ].filter((item): item is any => item && item.date != null).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    ].filter((item): item is any => {
+        if (!item || !item.date) return false
+        const date = new Date(item.date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return date >= today
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .slice(0, 5) // Show top 5
 
     const getIcon = (itemType: string) => {

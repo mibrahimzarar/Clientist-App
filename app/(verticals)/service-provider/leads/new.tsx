@@ -19,7 +19,6 @@ export default function NewLeadScreen() {
         source: 'phone_call' as SPLeadSource,
         status: 'new_lead' as SPLeadStatus,
         notes: '',
-        expected_value: '',
         next_follow_up: '',
     })
 
@@ -39,7 +38,6 @@ export default function NewLeadScreen() {
                 source: formData.source,
                 status: formData.status,
                 notes: formData.notes || undefined,
-                expected_value: formData.expected_value ? parseFloat(formData.expected_value) : undefined,
                 next_follow_up: formData.next_follow_up || undefined,
             }
 
@@ -140,18 +138,6 @@ export default function NewLeadScreen() {
                             onChangeText={(text) => setFormData({ ...formData, service_interested: text })}
                             placeholder="e.g., Plumbing, Electrical, AC Repair"
                             placeholderTextColor="#9CA3AF"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Expected Value</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={formData.expected_value}
-                            onChangeText={(text) => setFormData({ ...formData, expected_value: text })}
-                            placeholder="Estimated job value"
-                            placeholderTextColor="#9CA3AF"
-                            keyboardType="numeric"
                         />
                     </View>
                 </View>

@@ -87,9 +87,6 @@ export default function FreelancerLeadsList() {
                         <Ionicons name="call-outline" size={18} color="#4B5563" />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
-                        <Ionicons name="mail-outline" size={18} color="#4B5563" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
                         <Ionicons name="logo-whatsapp" size={18} color="#4B5563" />
                     </TouchableOpacity>
                     <View style={{ flex: 1 }} />

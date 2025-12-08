@@ -25,7 +25,7 @@ export default function EditLeadPage() {
         full_name: '',
         company: '',
         email: '',
-        phone: '',
+        phone_number: '',
         source: '',
         status: 'potential' as LeadStatus,
         notes: '',
@@ -39,7 +39,7 @@ export default function EditLeadPage() {
                 full_name: lead.full_name || '',
                 company: lead.company || '',
                 email: lead.email || '',
-                phone: lead.phone || '',
+                phone_number: lead.phone_number || '',
                 source: lead.source || '',
                 status: lead.status || 'potential',
                 notes: lead.notes || '',
@@ -131,8 +131,8 @@ export default function EditLeadPage() {
                         <Text style={styles.label}>Phone</Text>
                         <TextInput
                             style={styles.input}
-                            value={formData.phone}
-                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                            value={formData.phone_number}
+                            onChangeText={(text) => setFormData({ ...formData, phone_number: text })}
                             placeholder="e.g. +1 234 567 890"
                             keyboardType="phone-pad"
                         />

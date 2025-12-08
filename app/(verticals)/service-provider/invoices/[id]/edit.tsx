@@ -17,6 +17,7 @@ import { useSPInvoice, useUpdateSPInvoice, useSPClients, useSPJobs } from '../..
 import { SPInvoiceItem, SPInvoiceStatus } from '../../../../../src/types/serviceProvider'
 import { DatePickerInput } from '../../../../../src/components/ui/DatePickerInput'
 import { BouncingBallsLoader } from '../../../../../src/components/ui/BouncingBallsLoader'
+import { useAuth } from '../../../../../src/context/AuthContext'
 
 export default function EditInvoicePage() {
     const { id } = useLocalSearchParams()
@@ -26,6 +27,7 @@ export default function EditInvoicePage() {
     const updateInvoiceMutation = useUpdateSPInvoice()
     const { data: clientsData } = useSPClients()
     const { data: jobsData } = useSPJobs()
+    const { currency } = useAuth()
 
     const clients = clientsData?.data || []
     const jobs = jobsData?.data || []
@@ -337,7 +339,7 @@ export default function EditInvoicePage() {
 
                     <View style={styles.summaryRow}>
                         <Text style={styles.summaryLabel}>Subtotal</Text>
-                        <Text style={styles.summaryValue}>₨{calculateSubtotal().toLocaleString()}</Text>
+                        <Text style={styles.summaryValue}>{currency} {calculateSubtotal().toLocaleString()}</Text>
                     </View>
 
                     <View style={styles.formRow}>
@@ -365,7 +367,7 @@ export default function EditInvoicePage() {
 
                     <View style={styles.totalCard}>
                         <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={styles.totalValue}>₨{calculateTotal().toLocaleString()}</Text>
+                        <Text style={styles.totalValue}>{currency} {calculateTotal().toLocaleString()}</Text>
                     </View>
 
                     <View style={styles.formGroup}>

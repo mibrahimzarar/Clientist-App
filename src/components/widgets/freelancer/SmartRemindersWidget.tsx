@@ -24,7 +24,16 @@ export function SmartRemindersWidget() {
         ...tasks.map(t => ({ ...t, itemType: 'task' as const, date: t.due_date, title: t.title })),
         ...leads.filter(l => l.next_follow_up).map(l => ({ ...l, itemType: 'lead' as const, date: l.next_follow_up!, title: l.full_name })),
         ...invoices.map(i => ({ ...i, itemType: 'invoice' as const, date: i.due_date, title: `Invoice #${i.invoice_number}` }))
-    ].filter((item): item is any => item && item.date != null).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    ].filter((item): item is any => {
+        if (!item || !item.date) return false
+        // Always show invoices (unpaid/overdue) as they are critical
+        if (item.itemType === 'invoice') return true
+
+        const date = new Date(item.date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return date >= today
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .slice(0, 5) // Show top 5
 
     const getIcon = (itemType: string) => {

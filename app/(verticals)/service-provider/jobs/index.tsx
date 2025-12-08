@@ -13,11 +13,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSPJobs } from '../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { SPJob, SPJobStatus } from '../../../../src/types/serviceProvider'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function JobsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [filterStatus, setFilterStatus] = useState<SPJobStatus | 'all'>('all')
     const { data: jobsData, isLoading } = useSPJobs()
+    const { currency } = useAuth()
 
     const jobs = jobsData?.data || []
 
@@ -234,7 +236,7 @@ export default function JobsPage() {
                                         <View style={styles.metaItem}>
                                             <Ionicons name="cash-outline" size={14} color="#10B981" />
                                             <Text style={[styles.metaText, { color: '#10B981', fontWeight: '600' }]}>
-                                                ₨{job.job_price.toLocaleString()}
+                                                {currency} {job.job_price.toLocaleString()}
                                             </Text>
                                         </View>
                                     )}

@@ -13,11 +13,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSPInvoices } from '../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { SPInvoice, SPInvoiceStatus } from '../../../../src/types/serviceProvider'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function InvoicesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [filterStatus, setFilterStatus] = useState<SPInvoiceStatus | 'all'>('all')
     const { data: invoicesData, isLoading } = useSPInvoices()
+    const { currency } = useAuth()
 
     const invoices = invoicesData?.data || []
 
@@ -237,12 +239,12 @@ export default function InvoicesPage() {
                                 <View style={styles.invoiceAmount}>
                                     <View>
                                         <Text style={styles.amountLabel}>Total Amount</Text>
-                                        <Text style={styles.amountValue}>{invoice.total_amount.toLocaleString()}</Text>
+                                        <Text style={styles.amountValue}>{currency} {invoice.total_amount.toLocaleString()}</Text>
                                     </View>
                                     {invoice.amount_paid > 0 && (
                                         <View style={styles.paidBadge}>
                                             <Text style={styles.paidBadgeText}>
-                                                Paid: {invoice.amount_paid.toLocaleString()}
+                                                Paid: {currency} {invoice.amount_paid.toLocaleString()}
                                             </Text>
                                         </View>
                                     )}

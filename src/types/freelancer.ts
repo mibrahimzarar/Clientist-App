@@ -104,7 +104,7 @@ export type FreelancerLead = {
     full_name: string
     company?: string
     email?: string
-    phone?: string
+    phone_number?: string
     source?: string
     status: LeadStatus
     notes?: string

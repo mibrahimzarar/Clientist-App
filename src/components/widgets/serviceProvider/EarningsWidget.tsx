@@ -10,9 +10,11 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSPInvoices } from '../../../hooks/useServiceProvider'
+import { useAuth } from '../../../context/AuthContext'
 
 export function EarningsWidget() {
     const { data: invoicesData } = useSPInvoices()
+    const { currency } = useAuth()
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
     const [showMonthPicker, setShowMonthPicker] = useState(false)
@@ -81,14 +83,14 @@ export function EarningsWidget() {
     }
 
     const formatEarnings = (amount: number): string => {
-        if (amount === 0) return '0'
+        if (amount === 0) return `${currency} 0`
         if (amount >= 1000000) {
-            return '' + Math.floor(amount / 1000000) + 'M'
+            return `${currency} ` + Math.floor(amount / 1000000) + 'M'
         }
         if (amount >= 1000) {
-            return '' + Math.floor(amount / 1000) + 'k'
+            return `${currency} ` + Math.floor(amount / 1000) + 'k'
         }
-        return '' + amount.toFixed(2)
+        return `${currency} ` + amount.toFixed(2)
     }
 
     return (

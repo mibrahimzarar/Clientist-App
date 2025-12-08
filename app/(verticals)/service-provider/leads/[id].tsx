@@ -271,13 +271,6 @@ export default function LeadDetailsScreen() {
                                 <Text style={styles.detailValue}>{lead.service_interested}</Text>
                             </View>
                         )}
-                        
-                        {lead.expected_value && (
-                             <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Expected Value</Text>
-                                <Text style={styles.detailValue}>${lead.expected_value}</Text>
-                            </View>
-                        )}
 
                         {lead.next_follow_up && (
                             <View style={styles.detailRow}>

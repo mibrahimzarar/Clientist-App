@@ -25,9 +25,11 @@ import { NotificationService, NotificationPreferences } from '../../src/services
 import { getSelectedVertical } from '../../src/lib/verticalStorage'
 import AdminBroadcastModal from '../../src/components/notifications/AdminBroadcastModal'
 import { FeatureSuggestionModal } from '../../src/components/modals/FeatureSuggestionModal'
+import { useAuth } from '../../src/context/AuthContext'
 
 export default function Profile() {
   const insets = useSafeAreaInsets()
+  const { refreshProfile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -174,6 +176,7 @@ export default function Profile() {
 
       if (error) throw error
 
+      await refreshProfile()
       Alert.alert('Success', 'Profile updated successfully')
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile')
@@ -229,7 +232,7 @@ export default function Profile() {
         }
       },
     },
-    ...(currentVertical === 'freelancer' || currentVertical === 'travel_agent' ? [{
+    ...(currentVertical === 'freelancer' || currentVertical === 'travel_agent' || currentVertical === 'service_provider' ? [{
       icon: 'cash-outline',
       title: 'Currency',
       description: `Selected: ${currency}`,

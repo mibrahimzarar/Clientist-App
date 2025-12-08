@@ -78,12 +78,6 @@ export default function LeadsScreen() {
                 </View>
 
                 <View style={styles.infoRow}>
-                    {lead.expected_value && (
-                        <View style={styles.infoItem}>
-                            <Ionicons name="cash-outline" size={14} color="#6B7280" />
-                            <Text style={styles.infoText}> {lead.expected_value.toLocaleString()}</Text>
-                        </View>
-                    )}
                     {lead.next_follow_up && (
                         <View style={styles.infoItem}>
                             <Ionicons name="calendar-outline" size={14} color="#6B7280" />

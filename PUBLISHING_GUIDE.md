@@ -1,4 +1,4 @@
-# 📱 Property Lime - App Store & Play Store Publishing Guide
+# 📱 App Store & Play Store Publishing Guide
 
 ## 🎯 **Complete Step-by-Step Process**
 
@@ -25,47 +25,18 @@
 2. **Click**: "My Apps" → "+" → "New App"
 3. **Fill Details**:
    - **Platforms**: iOS
-   - **Name**: PropertyLime
+   - **Name**: [App Name]
     - **Primary Language**: English
-    - **Bundle ID**: com.propertylime.app
-    - **SKU**: property-lime-ios (unique identifier)
+    - **Bundle ID**: com.appname.app
+    - **SKU**: app-name-ios (unique identifier)
    - **User Access**: Full Access
 
 #### **2.2 App Information**
-1. **App Name**: PropertyLime
+1. **App Name**: [App Name]
 2. **Subtitle**: Make Sunnah Your Lifestyle
 3. **Description**:
 ```
-Streamline your property management with PropertyLime - your comprehensive solution for managing residents, expenses, inventory, and maintenance tickets.
 
-🌟 FEATURES:
-• Daily Prayer Times with accurate location-based calculations
-• Sunnah tracking and progress monitoring
-• Beautiful daily duas with elegant popup reminders
-• Daily Quran verses and Hadith with translations
-• Islamic challenges to strengthen your faith
-• Progress tracking for prayers and sunnahs
-• Elegant Islamic quotes and wisdom
-• User-friendly interface with dark/light themes
-
-🕌 PERFECT FOR:
-• Muslims seeking to strengthen their daily practices
-• Those wanting to track their prayer and sunnah progress
-• Anyone looking for daily Islamic inspiration
-• Families wanting to build Islamic habits together
-
-📱 KEY FEATURES:
-• Accurate prayer times based on your location
-• Daily rotation of 20 beautiful duas
-• Progress tracking for daily prayers
-• Sunnah practice monitoring
-• Daily Islamic content (Quran, Hadith, Dua)
-• Beautiful, intuitive interface
-• Works offline for prayer times
-• Privacy-focused design
-
-Start managing your property more efficiently today with PropertyLime!
-```
 
 4. **Keywords**: islamic, muslim, prayer, sunnah, quran, hadith, dua, salah, islam, daily, spiritual, religious, faith, worship, adhan, masjid, mosque
 
@@ -96,7 +67,7 @@ Start managing your property more efficiently today with PropertyLime!
 1. **Login**: [play.google.com/console](https://play.google.com/console)
 2. **Click**: "Create app"
 3. **Fill Details**:
-   - **App name**: PropertyLime
+   - **App name**: [App Name]
    - **Default language**: English
    - **App or game**: App
    - **Free or paid**: Free
@@ -158,11 +129,11 @@ npx eas update --branch main --message "App Version 1.0.0"
 
 **Privacy Policy Content:**
 ```
-Privacy Policy for PropertyLime
+Privacy Policy 
 
 **Last updated**: [Date]
 
-This Privacy Policy describes how PropertyLime ("we", "our", or "us") collects, uses, and protects your information when you use our mobile application.
+This Privacy Policy describes how ("we", "our", or "us") collects, uses, and protects your information when you use our mobile application.
 
 Information We Collect:
 - Location data (for accurate prayer times)

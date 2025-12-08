@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { initRealtime } from '../lib/realtime'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeProvider } from '../context/ThemeContext'
+import { AuthProvider } from '../context/AuthContext'
 import { NotificationManager } from '../components/notifications/NotificationManager'
 
 Notifications.setNotificationHandler({
@@ -45,10 +46,12 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   }, [])
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <NotificationManager />
-        {children}
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <NotificationManager />
+          {children}
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

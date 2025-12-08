@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSPClient } from '../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function ClientDetailsPage() {
     const { id } = useLocalSearchParams<{ id: string }>()
     const { data: clientData, isLoading } = useSPClient(id)
+    const { currency } = useAuth()
 
     const client = clientData?.data
 
@@ -127,12 +129,12 @@ export default function ClientDetailsPage() {
                             <Text style={styles.statLabel}>Jobs Completed</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>₨{client.total_spent.toLocaleString()}</Text>
+                            <Text style={styles.statValue}>{currency} {client.total_spent.toLocaleString()}</Text>
                             <Text style={styles.statLabel}>Total Spent</Text>
                         </View>
                         <View style={styles.statItem}>
                             <Text style={[styles.statValue, client.outstanding_balance > 0 && styles.statValueRed]}>
-                                ₨{client.outstanding_balance.toLocaleString()}
+                                {currency} {client.outstanding_balance.toLocaleString()}
                             </Text>
                             <Text style={styles.statLabel}>Outstanding</Text>
                         </View>

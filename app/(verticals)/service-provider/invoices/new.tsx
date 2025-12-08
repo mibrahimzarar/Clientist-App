@@ -16,11 +16,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useCreateSPInvoice, useSPClients, useSPJobs } from '../../../../src/hooks/useServiceProvider'
 import { SPInvoiceItem } from '../../../../src/types/serviceProvider'
 import { DatePickerInput } from '../../../../src/components/ui/DatePickerInput'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function NewInvoicePage() {
     const createInvoiceMutation = useCreateSPInvoice()
     const { data: clientsData } = useSPClients()
     const { data: jobsData } = useSPJobs()
+    const { currency } = useAuth()
 
     const clients = clientsData?.data || []
     const jobs = jobsData?.data || []
@@ -259,7 +261,7 @@ export default function NewInvoicePage() {
 
                     <View style={styles.totalCard}>
                         <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={styles.totalValue}>{calculateTotal().toLocaleString()}</Text>
+                        <Text style={styles.totalValue}>{currency} {calculateTotal().toLocaleString()}</Text>
                     </View>
                 </View>
             </ScrollView>
@@ -368,7 +370,7 @@ export default function NewInvoicePage() {
                                         </Text>
                                         {item.job_price && (
                                             <Text style={styles.modalItemSubtext}>
-                                                {item.job_price.toLocaleString()}
+                                                {currency} {item.job_price.toLocaleString()}
                                             </Text>
                                         )}
                                     </View>

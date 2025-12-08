@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSPJob, useUpdateSPJob, useDeleteSPJob } from '../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { SPJobStatus } from '../../../../src/types/serviceProvider'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function JobDetailsPage() {
     const { id } = useLocalSearchParams()
@@ -22,6 +23,7 @@ export default function JobDetailsPage() {
     const { data: jobData, isLoading } = useSPJob(jobId)
     const updateJobMutation = useUpdateSPJob()
     const deleteJobMutation = useDeleteSPJob()
+    const { currency } = useAuth()
 
     const job = jobData?.data
 
@@ -246,14 +248,14 @@ export default function JobDetailsPage() {
                     {job.parts_cost > 0 && (
                         <View style={styles.priceRow}>
                             <Text style={styles.priceLabel}>Parts Cost</Text>
-                            <Text style={styles.priceValue}>₨{job.parts_cost.toLocaleString()}</Text>
+                            <Text style={styles.priceValue}>{currency} {job.parts_cost.toLocaleString()}</Text>
                         </View>
                     )}
 
                     {job.labor_cost > 0 && (
                         <View style={styles.priceRow}>
                             <Text style={styles.priceLabel}>Labor Cost</Text>
-                            <Text style={styles.priceValue}>₨{job.labor_cost.toLocaleString()}</Text>
+                            <Text style={styles.priceValue}>{currency} {job.labor_cost.toLocaleString()}</Text>
                         </View>
                     )}
 
@@ -262,7 +264,7 @@ export default function JobDetailsPage() {
                     <View style={styles.priceRow}>
                         <Text style={styles.priceTotalLabel}>Total Cost</Text>
                         <Text style={styles.priceTotalValue}>
-                            ₨{job.total_cost?.toLocaleString() || '0'}
+                            {currency} {job.total_cost?.toLocaleString() || '0'}
                         </Text>
                     </View>
                 </View>

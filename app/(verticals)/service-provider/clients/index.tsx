@@ -15,11 +15,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSPClients, useDeleteSPClient } from '../../../../src/hooks/useServiceProvider'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { SPClient } from '../../../../src/types/serviceProvider'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const { data: clientsData, isLoading, refetch } = useSPClients()
     const deleteClientMutation = useDeleteSPClient()
+    const { currency } = useAuth()
 
     const clients = clientsData?.data || []
 
@@ -188,7 +190,7 @@ export default function ClientsPage() {
                                     </View>
                                     {client.outstanding_balance > 0 && (
                                         <Text style={styles.balanceText}>
-                                            Outstanding: ₨{client.outstanding_balance.toLocaleString()}
+                                            Outstanding: {currency} {client.outstanding_balance.toLocaleString()}
                                         </Text>
                                     )}
                                 </View>

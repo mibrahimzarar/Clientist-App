@@ -17,6 +17,7 @@ import { SPInvoiceStatus } from '../../../../src/types/serviceProvider'
 import { printToFileAsync } from 'expo-print'
 import { shareAsync } from 'expo-sharing'
 import { supabase } from '../../../../src/lib/supabase'
+import { useAuth } from '../../../../src/context/AuthContext'
 
 export default function InvoiceDetailsPage() {
     const { id } = useLocalSearchParams()
@@ -26,6 +27,7 @@ export default function InvoiceDetailsPage() {
     const updateInvoiceMutation = useUpdateSPInvoice()
     const deleteInvoiceMutation = useDeleteSPInvoice()
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+    const { currency } = useAuth()
 
     const invoice = invoiceData?.data
 
@@ -368,7 +370,7 @@ export default function InvoiceDetailsPage() {
                                         ${invoice.items?.map(task => `
                                             <tr>
                                                 <td class="description-col">${task.description}</td>
-                                                <td style="text-align: right;">${task.amount.toLocaleString()}</td>
+                                                <td style="text-align: right;">${currency} ${task.amount.toLocaleString()}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -377,32 +379,32 @@ export default function InvoiceDetailsPage() {
                                 <div class="summary-table">
                                     <div class="summary-row">
                                         <div class="summary-label">Subtotal</div>
-                                        <div class="summary-value">${invoice.subtotal.toLocaleString()}</div>
+                                        <div class="summary-value">${currency} ${invoice.subtotal.toLocaleString()}</div>
                                     </div>
                                     ${invoice.tax_amount > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Tax</div>
-                                            <div class="summary-value">${invoice.tax_amount.toLocaleString()}</div>
+                                            <div class="summary-value">${currency} ${invoice.tax_amount.toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                     ${invoice.discount_amount > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Discount</div>
-                                            <div class="summary-value" style="color: #EF4444;">-${invoice.discount_amount.toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #EF4444;">-${currency} ${invoice.discount_amount.toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                     <div class="total-row">
                                         <div class="total-label">Total</div>
-                                        <div class="total-value">${invoice.total_amount.toLocaleString()}</div>
+                                        <div class="total-value">${currency} ${invoice.total_amount.toLocaleString()}</div>
                                     </div>
                                     ${invoice.amount_paid > 0 ? `
                                         <div class="summary-row">
                                             <div class="summary-label">Amount Paid</div>
-                                            <div class="summary-value" style="color: #10B981;">${invoice.amount_paid.toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #10B981;">${currency} ${invoice.amount_paid.toLocaleString()}</div>
                                         </div>
                                         <div class="summary-row">
                                             <div class="summary-label">Amount Due</div>
-                                            <div class="summary-value" style="color: #EF4444; font-weight: 700;">${(invoice.total_amount - invoice.amount_paid).toLocaleString()}</div>
+                                            <div class="summary-value" style="color: #EF4444; font-weight: 700;">${currency} ${(invoice.total_amount - invoice.amount_paid).toLocaleString()}</div>
                                         </div>
                                     ` : ''}
                                 </div>
@@ -595,7 +597,7 @@ export default function InvoiceDetailsPage() {
                             <View style={styles.taskInfo}>
                                 <Text style={styles.taskDescription}>{item.description}</Text>
                             </View>
-                            <Text style={styles.taskAmount}>₨{item.amount.toLocaleString()}</Text>
+                            <Text style={styles.taskAmount}>{currency} {item.amount.toLocaleString()}</Text>
                         </View>
                     ))}
                 </View>
@@ -606,13 +608,13 @@ export default function InvoiceDetailsPage() {
 
                     <View style={styles.amountRow}>
                         <Text style={styles.amountLabel}>Subtotal</Text>
-                        <Text style={styles.amountValue}>₨{invoice.subtotal.toLocaleString()}</Text>
+                        <Text style={styles.amountValue}>{currency} {invoice.subtotal.toLocaleString()}</Text>
                     </View>
 
                     {invoice.tax_amount > 0 && (
                         <View style={styles.amountRow}>
                             <Text style={styles.amountLabel}>Tax</Text>
-                            <Text style={styles.amountValue}>₨{invoice.tax_amount.toLocaleString()}</Text>
+                            <Text style={styles.amountValue}>{currency} {invoice.tax_amount.toLocaleString()}</Text>
                         </View>
                     )}
 
@@ -620,7 +622,7 @@ export default function InvoiceDetailsPage() {
                         <View style={styles.amountRow}>
                             <Text style={styles.amountLabel}>Discount</Text>
                             <Text style={[styles.amountValue, { color: '#EF4444' }]}>
-                                -₨{invoice.discount_amount.toLocaleString()}
+                                -{currency} {invoice.discount_amount.toLocaleString()}
                             </Text>
                         </View>
                     )}
@@ -629,7 +631,7 @@ export default function InvoiceDetailsPage() {
 
                     <View style={styles.amountRow}>
                         <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={styles.totalValue}>₨{invoice.total_amount.toLocaleString()}</Text>
+                        <Text style={styles.totalValue}>{currency} {invoice.total_amount.toLocaleString()}</Text>
                     </View>
 
                     {invoice.amount_paid > 0 && (
@@ -637,13 +639,13 @@ export default function InvoiceDetailsPage() {
                             <View style={styles.amountRow}>
                                 <Text style={styles.amountLabel}>Amount Paid</Text>
                                 <Text style={[styles.amountValue, { color: '#10B981' }]}>
-                                    ₨{invoice.amount_paid.toLocaleString()}
+                                    {currency} {invoice.amount_paid.toLocaleString()}
                                 </Text>
                             </View>
                             <View style={styles.amountRow}>
                                 <Text style={styles.dueLabel}>Amount Due</Text>
                                 <Text style={styles.dueValue}>
-                                    ₨{(invoice.total_amount - invoice.amount_paid).toLocaleString()}
+                                    {currency} {(invoice.total_amount - invoice.amount_paid).toLocaleString()}
                                 </Text>
                             </View>
                         </>
