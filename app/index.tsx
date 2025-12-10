@@ -1,75 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native'
 import { BouncingBallsLoader } from '../src/components/ui/BouncingBallsLoader'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { supabase } from '../src/lib/supabase'
-import { router, Link } from 'expo-router'
-import { getSelectedVertical } from '../src/lib/verticalStorage'
-import { findVerticalById } from '../src/verticals'
+import { Link } from 'expo-router'
 import FreelancerDashboard from '../src/components/dashboards/FreelancerDashboard'
 import { ServiceProviderDashboard } from '../src/components/dashboards/ServiceProviderDashboard'
 import TravelAgentDashboard from '../src/components/dashboards/TravelAgentDashboard'
 import AdminDashboard from '../src/components/dashboards/AdminDashboard'
+import { useAuth } from '../src/context/AuthContext'
 
 export default function Index() {
-  const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<any>(null)
-  const [vertical, setVertical] = useState<string | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getSession()
-      setSession(data.session)
-      if (data.session?.user) {
-        const v = await getSelectedVertical(data.session.user.id)
-        setVertical(v)
-        
-        // Check admin status
-          let adminAccess = false
-          if (data.session.user.email?.startsWith('admin@') || data.session.user.email?.endsWith('@admin.com')) {
-              adminAccess = true
-          }
-          if (!adminAccess) {
-            const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', data.session.user.id)
-            .single()
-            adminAccess = !!profile?.is_admin
-        }
-        setIsAdmin(adminAccess)
-      }
-      setLoading(false)
-    }
-    init()
-
-    const { data: auth } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        const v = await getSelectedVertical(session.user.id)
-        setVertical(v)
-        
-        let adminAccess = false
-        if (session.user.email?.startsWith('admin@') || session.user.email?.endsWith('@admin.com')) {
-            adminAccess = true
-        }
-        if (!adminAccess) {
-            const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', session.user.id)
-            .single()
-            adminAccess = !!profile?.is_admin
-        }
-        setIsAdmin(adminAccess)
-      } else {
-        setVertical(null)
-        setIsAdmin(false)
-      }
-    })
-    return () => auth.subscription.unsubscribe()
-  }, [])
+  const { loading, session, vertical, isAdmin } = useAuth()
 
   if (loading) {
     return (

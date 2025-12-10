@@ -9,18 +9,18 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useClients } from '../../../hooks/useTravelAgent'
+import { useAggregatedEarnings } from '../../../hooks/useTravelAgent'
 import { supabase } from '../../../lib/supabase'
 
 export function EarningsWidget() {
-    const { data: clientsData, refetch } = useClients(1, 1000) // Fetch all clients to get earnings
+    const { data: aggregatedData, refetch } = useAggregatedEarnings()
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
     const [showMonthPicker, setShowMonthPicker] = useState(false)
     const [showYearPicker, setShowYearPicker] = useState(false)
     const [currencySymbol, setCurrencySymbol] = useState('$')
 
-    // Refetch clients when component mounts or dashboard is focused
+    // Refetch when component mounts or dashboard is focused
     React.useEffect(() => {
         refetch()
         fetchCurrency()
@@ -58,26 +58,22 @@ export function EarningsWidget() {
         }
     }
 
-    // Calculate earnings from completed clients
+    // Calculate earnings from aggregated data
     const earningsData = useMemo(() => {
-        if (!clientsData?.data?.data) return { availableYears: [], monthlyEarning: 0, yearlyEarning: 0 }
+        if (!aggregatedData?.data) return { availableYears: [], monthlyEarning: 0, yearlyEarning: 0 }
 
-        const clients = clientsData.data.data
+        const earnings = aggregatedData.data
         const earningsByMonthYear: { [key: string]: number } = {}
         const yearSet = new Set<number>()
 
-        clients.forEach(client => {
-            if (client.status === 'completed' && client.client_earnings && client.client_earnings.length > 0) {
-                client.client_earnings.forEach(earning => {
-                    // Parse date string (e.g., "2025-11-28") properly
-                    const dateStr = earning.earned_date
-                    const [year, month, day] = dateStr.split('-').map(Number)
-                    const monthYearKey = `${year}-${month - 1}` // month is 0-indexed
+        earnings.forEach((earning: any) => {
+            // Parse date string (e.g., "2025-11-28") properly
+            const dateStr = earning.earned_date
+            const [year, month, day] = dateStr.split('-').map(Number)
+            const monthYearKey = `${year}-${month - 1}` // month is 0-indexed
 
-                    earningsByMonthYear[monthYearKey] = (earningsByMonthYear[monthYearKey] || 0) + earning.amount
-                    yearSet.add(year)
-                })
-            }
+            earningsByMonthYear[monthYearKey] = (earningsByMonthYear[monthYearKey] || 0) + earning.amount
+            yearSet.add(year)
         })
 
         // Calculate monthly earning for selected month
@@ -96,7 +92,7 @@ export function EarningsWidget() {
             monthlyEarning,
             yearlyEarning,
         }
-    }, [clientsData?.data?.data, selectedYear, selectedMonth])
+    }, [aggregatedData?.data, selectedYear, selectedMonth])
 
     const monthName = new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long' })
 

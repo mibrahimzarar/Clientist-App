@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
   Modal,
+  Switch,
 } from 'react-native'
 import { NotesTimeline } from '../../../../src/components/notes/NotesTimeline'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
@@ -97,6 +98,14 @@ export default function TravelAgentClientDetail() {
       setShowPriorityPicker(false)
     } catch (error) {
       Alert.alert('Error', 'Failed to update client priority')
+    }
+  }
+
+  const handleVisaStatusChange = async (value: boolean) => {
+    try {
+      await updateClient.mutateAsync({ id: id!, data: { is_visa_issued: value } })
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update visa status')
     }
   }
 
@@ -366,6 +375,35 @@ export default function TravelAgentClientDetail() {
             <Ionicons name="calendar-outline" size={18} color="#6B7280" />
             <Text style={styles.infoLabel}>Created</Text>
             <Text style={styles.infoValue}>{new Date(client.created_at).toLocaleDateString()}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Visa Status Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Ionicons name="card" size={20} color="#8B5CF6" />
+          <Text style={styles.cardTitle}>Visa Status</Text>
+        </View>
+        <View style={styles.cardContent}>
+          <View style={[styles.infoRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons
+                name={client.is_visa_issued ? "checkmark-circle" : "time"}
+                size={24}
+                color={client.is_visa_issued ? "#10B981" : "#6B7280"}
+              />
+              <Text style={[styles.infoLabel, { marginLeft: 8, fontSize: 16 }]}>
+                {client.is_visa_issued ? 'Visa Issued' : 'Visa Not Issued'}
+              </Text>
+            </View>
+            <Switch
+              trackColor={{ false: "#767577", true: "#8B5CF6" }}
+              thumbColor={client.is_visa_issued ? "#f4f3f4" : "#f4f3f4"}
+              ios_backgroundColor="#3e3e3e"
+              onValueChange={handleVisaStatusChange}
+              value={!!client.is_visa_issued}
+            />
           </View>
         </View>
       </View>

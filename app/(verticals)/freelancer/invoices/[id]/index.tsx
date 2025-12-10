@@ -16,7 +16,6 @@ import { InvoiceStatus } from '../../../../../src/types/freelancer'
 
 import { printToFileAsync } from 'expo-print'
 import { shareAsync } from 'expo-sharing'
-import * as FileSystem from 'expo-file-system'
 import { supabase } from '../../../../../src/lib/supabase'
 
 export default function InvoiceDetailsPage() {

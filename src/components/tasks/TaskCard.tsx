@@ -11,7 +11,7 @@ interface TaskCardProps {
     onPress: (task: ClientTask) => void
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDelete, onPress }) => {
+export const TaskCard: React.FC<TaskCardProps> = React.memo(({ task, onStatusChange, onDelete, onPress }) => {
     const getPriorityColor = (priority: TaskPriority) => {
         switch (priority) {
             case 'urgent': return '#EF4444'
@@ -95,7 +95,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDele
             </View>
         </TouchableOpacity>
     )
-}
+})
 
 const styles = StyleSheet.create({
     container: {

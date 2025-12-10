@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 
 const CLIENT_IMAGES_DIR = `${FileSystem.documentDirectory}client_profiles/`
 

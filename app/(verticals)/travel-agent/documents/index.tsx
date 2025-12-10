@@ -8,7 +8,6 @@ import {
     TextInput,
     Alert,
     Image,
-    Linking,
     Modal,
 } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -19,6 +18,7 @@ import { supabase } from '../../../../src/lib/supabase'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { ClientDocument } from '../../../../src/types/documents'
 import { UploadModal } from '../../../../src/components/documents/UploadModal'
+import { openDocument } from '../../../../src/utils/documentHandler'
 
 interface DocumentWithClient extends ClientDocument {
     client?: {
@@ -128,9 +128,9 @@ export default function DocumentsPage() {
         )
     }
 
-    const handleOpenDocument = (url?: string) => {
-        if (url) {
-            Linking.openURL(url)
+    const handleOpenDocument = (doc: DocumentWithClient) => {
+        if (doc.url) {
+            openDocument(doc.url, doc.name, doc.file_type)
         } else {
             Alert.alert('Error', 'Could not open document')
         }
@@ -246,7 +246,7 @@ export default function DocumentsPage() {
                             <TouchableOpacity
                                 key={doc.id}
                                 style={styles.docCard}
-                                onPress={() => handleOpenDocument(doc.url)}
+                                onPress={() => handleOpenDocument(doc)}
                                 activeOpacity={0.7}
                             >
                                 <View style={styles.docIconContainer}>

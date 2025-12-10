@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -65,6 +66,8 @@ export default function AdminDashboard() {
               <Image
                 source={{ uri: adminProfile || 'https://ui-avatars.com/api/?name=Admin&background=4F46E5&color=fff' }}
                 style={styles.profileImage}
+                contentFit="cover"
+                transition={200}
               />
             </TouchableOpacity>
           </View>

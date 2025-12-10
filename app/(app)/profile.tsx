@@ -15,7 +15,6 @@ import {
 import { BouncingBallsLoader } from '../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'

@@ -51,10 +51,10 @@ export default function FreelancerProjectsList() {
         }
     }
 
-    const renderProjectItem = ({ item }: { item: FreelancerProject }) => (
+    const MemoizedProjectCard = React.memo(({ item, onPress }: { item: FreelancerProject, onPress: (id: string) => void }) => (
         <TouchableOpacity
             style={styles.projectCard}
-            onPress={() => router.push(`/(verticals)/freelancer/projects/${item.id}` as any)}
+            onPress={() => onPress(item.id)}
             activeOpacity={0.7}
         >
             <LinearGradient
@@ -101,7 +101,7 @@ export default function FreelancerProjectsList() {
                 </View>
             </View>
         </TouchableOpacity>
-    )
+    ))
 
     return (
         <View style={styles.container}>
@@ -187,8 +187,17 @@ export default function FreelancerProjectsList() {
             {/* Projects List */}
             <FlatList
                 data={projects}
-                renderItem={renderProjectItem}
+                renderItem={({ item }) => (
+                    <MemoizedProjectCard
+                        item={item}
+                        onPress={(id) => router.push(`/(verticals)/freelancer/projects/${id}` as any)}
+                    />
+                )}
                 keyExtractor={(item) => item.id}
+                initialNumToRender={8}
+                windowSize={5}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={8}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={isLoading} onRefresh={() => refetch()} />

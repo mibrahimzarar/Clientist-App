@@ -829,3 +829,35 @@ export async function deleteClientEarning(earningId: string): Promise<ApiRespons
     }
   }
 }
+
+// Optimized Aggregated Earnings Query
+export async function getAggregatedEarnings(): Promise<ApiResponse<any>> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // Fetch earnings directly joined with clients to filter by status='completed'
+    // Using !inner to enforce the join filter
+    const { data, error } = await supabase
+      .from('client_earnings')
+      .select(`
+                amount,
+                earned_date,
+                client:clients!inner(status)
+            `)
+      .eq('client.status', 'completed')
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    return {
+      data: data,
+      success: true
+    }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Failed to fetch aggregated earnings',
+      success: false
+    }
+  }
+}

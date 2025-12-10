@@ -70,12 +70,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
-        fetchProfile(session.user.id)
-        fetchVertical(session.user.id)
+        try {
+          await Promise.all([
+            fetchProfile(session.user.id),
+            fetchVertical(session.user.id)
+          ])
+        } catch (e) {
+          console.error('Error loading user data:', e)
+        }
       }
+      setLoading(false)
+    }).catch(err => {
+      console.error('Error getting session:', err)
       setLoading(false)
     })
 
@@ -85,8 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         // Only fetch if session changed to a new user or signed in
         if (session.user.id !== profile?.id) {
-            fetchProfile(session.user.id)
-            fetchVertical(session.user.id)
+            await Promise.all([
+              fetchProfile(session.user.id),
+              fetchVertical(session.user.id)
+            ])
         }
       } else {
         setProfile(null)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
     View,
     Text,
@@ -38,18 +38,18 @@ export default function TasksPage() {
         return matchesSearch && matchesStatus
     })
 
-    const handleStatusChange = (id: string, status: TaskStatus) => {
+    const handleStatusChange = useCallback((id: string, status: TaskStatus) => {
         updateTask.mutate({ id, data: { status } })
-    }
+    }, [updateTask])
 
-    const handleDelete = (id: string) => {
+    const handleDelete = useCallback((id: string) => {
         deleteTask.mutate(id)
-    }
+    }, [deleteTask])
 
-    const handleEdit = (task: ClientTask) => {
+    const handleEdit = useCallback((task: ClientTask) => {
         setEditingTask(task)
         setIsModalVisible(true)
-    }
+    }, [])
 
     const handleSubmit = (taskData: any) => {
         if (editingTask) {
@@ -146,6 +146,10 @@ export default function TasksPage() {
                     />
                 )}
                 keyExtractor={item => item.id}
+                initialNumToRender={10}
+                windowSize={5}
+                maxToRenderPerBatch={10}
+                removeClippedSubviews={true}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={isLoading} onRefresh={refetch} />

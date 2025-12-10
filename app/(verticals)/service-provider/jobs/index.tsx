@@ -6,6 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     TextInput,
+    FlatList,
 } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -49,6 +50,68 @@ export default function JobsPage() {
             default: return 'ellipse'
         }
     }
+
+    const MemoizedJobCard = React.memo(({ job, onPress, getStatusColor, getStatusIcon, currency }: { job: SPJob, onPress: (id: string) => void, getStatusColor: (s: SPJobStatus) => string, getStatusIcon: (s: SPJobStatus) => any, currency: string }) => (
+        <TouchableOpacity
+            style={styles.jobCard}
+            onPress={() => onPress(job.id)}
+            activeOpacity={0.7}
+        >
+            <LinearGradient
+                colors={[getStatusColor(job.status), getStatusColor(job.status) + 'CC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.jobStatusBar}
+            />
+
+            <View style={styles.jobContent}>
+                <View style={styles.jobHeader}>
+                    <View style={styles.jobTitleRow}>
+                        <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
+                        {job.is_urgent && (
+                            <View style={styles.urgentBadge}>
+                                <Ionicons name="alert-circle" size={14} color="#EF4444" />
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.jobClient} numberOfLines={1}>
+                        <Ionicons name="person-outline" size={14} color="#6B7280" />
+                        {' '}{job.client?.full_name}
+                    </Text>
+                </View>
+
+                <View style={styles.jobMeta}>
+                    <View style={[styles.statusChip, { backgroundColor: getStatusColor(job.status) + '20' }]}>
+                        <Ionicons name={getStatusIcon(job.status)} size={14} color={getStatusColor(job.status)} />
+                        <Text style={[styles.statusChipText, { color: getStatusColor(job.status) }]}>
+                            {job.status === 'in_progress' ? 'Pending' : job.status.replace('_', ' ')}
+                        </Text>
+                    </View>
+
+                    {job.scheduled_date && (
+                        <View style={styles.metaItem}>
+                            <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+                            <Text style={styles.metaText}>
+                                {new Date(job.scheduled_date).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    )}
+
+                    {job.job_price && (
+                        <View style={styles.metaItem}>
+                            <Ionicons name="cash-outline" size={14} color="#10B981" />
+                            <Text style={[styles.metaText, { color: '#10B981', fontWeight: '600' }]}>
+                                {currency} {job.job_price.toLocaleString()}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
+            </View>
+
+            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" style={styles.chevron} />
+        </TouchableOpacity>
+    ))
 
     const statusFilters: { label: string; value: SPJobStatus | 'all' }[] = [
         { label: 'All', value: 'all' },
@@ -113,16 +176,16 @@ export default function JobsPage() {
 
             {/* Status Filters */}
             <View style={styles.filtersSection}>
-                <ScrollView 
-                    horizontal 
+                <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.filtersContainer}
                 >
                     {statusFilters.map((filter) => {
-                        const count = filter.value === 'all' 
-                            ? jobs.length 
+                        const count = filter.value === 'all'
+                            ? jobs.length
                             : jobs.filter(j => j.status === filter.value).length
-                        
+
                         return (
                             <TouchableOpacity
                                 key={filter.value}
@@ -159,8 +222,16 @@ export default function JobsPage() {
             </View>
 
             {/* Jobs List */}
-            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-                {filteredJobs.length === 0 ? (
+            <FlatList
+                style={styles.content}
+                contentContainerStyle={styles.contentContainer}
+                data={filteredJobs}
+                keyExtractor={(item) => item.id}
+                initialNumToRender={8}
+                windowSize={5}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={8}
+                ListEmptyComponent={() => (
                     <View style={styles.emptyContainer}>
                         <Ionicons name="construct-outline" size={64} color="#D1D5DB" />
                         <Text style={styles.emptyTitle}>No jobs found</Text>
@@ -184,71 +255,17 @@ export default function JobsPage() {
                             </TouchableOpacity>
                         )}
                     </View>
-                ) : (
-                    filteredJobs.map((job) => (
-                        <TouchableOpacity
-                            key={job.id}
-                            style={styles.jobCard}
-                            onPress={() => router.push(`/(verticals)/service-provider/jobs/${job.id}` as any)}
-                            activeOpacity={0.7}
-                        >
-                            <LinearGradient
-                                colors={[getStatusColor(job.status), getStatusColor(job.status) + 'CC']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 0, y: 1 }}
-                                style={styles.jobStatusBar}
-                            />
-                            
-                            <View style={styles.jobContent}>
-                                <View style={styles.jobHeader}>
-                                    <View style={styles.jobTitleRow}>
-                                        <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
-                                        {job.is_urgent && (
-                                            <View style={styles.urgentBadge}>
-                                                <Ionicons name="alert-circle" size={14} color="#EF4444" />
-                                            </View>
-                                        )}
-                                    </View>
-                                    <Text style={styles.jobClient} numberOfLines={1}>
-                                        <Ionicons name="person-outline" size={14} color="#6B7280" />
-                                        {' '}{job.client?.full_name}
-                                    </Text>
-                                </View>
-
-                                <View style={styles.jobMeta}>
-                                    <View style={[styles.statusChip, { backgroundColor: getStatusColor(job.status) + '20' }]}>
-                                        <Ionicons name={getStatusIcon(job.status)} size={14} color={getStatusColor(job.status)} />
-                                        <Text style={[styles.statusChipText, { color: getStatusColor(job.status) }]}>
-                                            {job.status === 'in_progress' ? 'Pending' : job.status.replace('_', ' ')}
-                                        </Text>
-                                    </View>
-                                    
-                                    {job.scheduled_date && (
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                                            <Text style={styles.metaText}>
-                                                {new Date(job.scheduled_date).toLocaleDateString()}
-                                            </Text>
-                                        </View>
-                                    )}
-                                    
-                                    {job.job_price && (
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="cash-outline" size={14} color="#10B981" />
-                                            <Text style={[styles.metaText, { color: '#10B981', fontWeight: '600' }]}>
-                                                {currency} {job.job_price.toLocaleString()}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-
-                            </View>
-
-                            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" style={styles.chevron} />
-                        </TouchableOpacity>
-                    ))
                 )}
-            </ScrollView>
+                renderItem={({ item }) => (
+                    <MemoizedJobCard
+                        job={item}
+                        onPress={(id) => router.push(`/(verticals)/service-provider/jobs/${id}` as any)}
+                        getStatusColor={getStatusColor}
+                        getStatusIcon={getStatusIcon}
+                        currency={currency}
+                    />
+                )}
+            />
         </View>
     )
 }

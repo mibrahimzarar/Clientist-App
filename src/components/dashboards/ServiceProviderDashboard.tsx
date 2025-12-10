@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -136,6 +137,8 @@ export const ServiceProviderDashboard: React.FC = () => {
                             <Image
                                 source={{ uri: companyLogo || `https://ui-avatars.com/api/?name=${companyName}&background=3B82F6&color=fff` }}
                                 style={styles.profileImage}
+                                contentFit="cover"
+                                transition={200}
                             />
                         </TouchableOpacity>
                     </View>

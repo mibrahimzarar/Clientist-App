@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -124,6 +125,8 @@ export default function FreelancerDashboard() {
               <Image
                 source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Freelancer&background=8B5CF6&color=fff' }}
                 style={styles.profileImage}
+                contentFit="cover"
+                transition={200}
               />
             </TouchableOpacity>
           </View>

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { useDashboardSummary, useClientAnalytics, useClients, useUpcomingTravels, usePendingTasks } from '../../hooks/useTravelAgent'
 import { useTodaysFollowUps, useLeadStatistics } from '../../hooks/useLeads'
@@ -152,6 +153,8 @@ export default function TravelAgentDashboard() {
                             <Image
                                 source={{ uri: companyLogo || 'https://ui-avatars.com/api/?name=Travel+Agent&background=0D8ABC&color=fff' }}
                                 style={styles.profileImage}
+                                contentFit="cover"
+                                transition={200}
                             />
                         </TouchableOpacity>
                     </View>
@@ -258,6 +261,8 @@ export default function TravelAgentDashboard() {
                                         <Image
                                             source={{ uri: client.profile_picture_url }}
                                             style={styles.clientAvatarImage}
+                                            contentFit="cover"
+                                            transition={200}
                                         />
                                     ) : (
                                         <Text style={styles.clientInitials}>

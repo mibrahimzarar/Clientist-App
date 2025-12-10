@@ -1,8 +1,9 @@
 import React from 'react'
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { ClientDocument } from '../../types/documents'
-import * as Linking from 'expo-linking'
+import { openDocument } from '../../utils/documentHandler'
 
 interface DocumentCardProps {
     document: ClientDocument
@@ -14,7 +15,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }
 
     const handlePress = () => {
         if (document.url) {
-            Linking.openURL(document.url)
+            openDocument(document.url, document.name, document.file_type)
         } else {
             Alert.alert('Error', 'Could not open document')
         }
@@ -49,7 +50,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDelete }
         <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.7}>
             <View style={styles.previewContainer}>
                 {isImage && document.url ? (
-                    <Image source={{ uri: document.url }} style={styles.previewImage} resizeMode="cover" />
+                    <Image source={{ uri: document.url }} style={styles.previewImage} contentFit="cover" transition={200} />
                 ) : (
                     <View style={styles.iconPlaceholder}>
                         <Ionicons name={getIcon()} size={32} color="#6B7280" />

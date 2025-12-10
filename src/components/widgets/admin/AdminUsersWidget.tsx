@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native'
+import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { AdminUser } from '../../../types/admin'
 import { useUsers, useUpdateUserStatus } from '../../../hooks/useAdmin'
@@ -95,6 +96,8 @@ export default function AdminUsersWidget() {
                                     <Image
                                         source={avatarSource}
                                         style={styles.avatar}
+                                        contentFit="cover"
+                                        transition={200}
                                     />
                                     <View>
                                         <Text style={styles.userName}>{displayName}</Text>

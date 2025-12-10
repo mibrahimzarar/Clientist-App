@@ -23,6 +23,7 @@ export type TravelClient = {
   profile_picture_url?: string
   passport_image_url?: string
   notes?: string
+  is_visa_issued?: boolean
   created_at: string
   updated_at: string
   created_by?: string

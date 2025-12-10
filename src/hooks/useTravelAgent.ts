@@ -57,7 +57,7 @@ export function useClient(id: string) {
 
 export function useCreateClient() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: createClient,
     onSuccess: () => {
@@ -69,7 +69,7 @@ export function useCreateClient() {
 
 export function useUpdateClient() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TravelClient> }) => updateClient(id, data),
     onSuccess: (_, { id }) => {
@@ -82,7 +82,7 @@ export function useUpdateClient() {
 
 export function useDeleteClient() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: deleteClient,
     onSuccess: () => {
@@ -105,9 +105,9 @@ export function useTravelInformation(clientId: string) {
 
 export function useCreateOrUpdateTravelInformation() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, data }: { clientId: string; data: TravelFormData }) => 
+    mutationFn: ({ clientId, data }: { clientId: string; data: TravelFormData }) =>
       createOrUpdateTravelInformation(clientId, data),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['travel-information', clientId] })
@@ -129,9 +129,9 @@ export function useVisaApplications(clientId: string) {
 
 export function useCreateVisaApplication() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, data }: { clientId: string; data: VisaFormData }) => 
+    mutationFn: ({ clientId, data }: { clientId: string; data: VisaFormData }) =>
       createVisaApplication(clientId, data),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['visa-applications', clientId] })
@@ -142,9 +142,9 @@ export function useCreateVisaApplication() {
 
 export function useUpdateVisaApplication() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<VisaFormData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<VisaFormData> }) =>
       updateVisaApplication(id, data),
     onSuccess: (_, { id }) => {
       // Note: We need to get clientId somehow, this is a simplified version
@@ -165,9 +165,9 @@ export function useReminders(clientId?: string) {
 
 export function useCreateReminder() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, data }: { clientId: string; data: ReminderFormData }) => 
+    mutationFn: ({ clientId, data }: { clientId: string; data: ReminderFormData }) =>
       createReminder(clientId, data),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['reminders', clientId] })
@@ -179,9 +179,9 @@ export function useCreateReminder() {
 
 export function useUpdateReminderStatus() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) => 
+    mutationFn: ({ id, isCompleted }: { id: string; isCompleted: boolean }) =>
       updateReminderStatus(id, isCompleted),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
@@ -204,9 +204,9 @@ export function usePayments(clientId: string) {
 
 export function useCreatePayment() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, data }: { clientId: string; data: PaymentFormData }) => 
+    mutationFn: ({ clientId, data }: { clientId: string; data: PaymentFormData }) =>
       createPayment(clientId, data),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['payments', clientId] })
@@ -219,9 +219,9 @@ export function useCreatePayment() {
 
 export function useUploadClientFile() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, file, fileType }: { clientId: string; file: File; fileType: string }) => 
+    mutationFn: ({ clientId, file, fileType }: { clientId: string; file: File; fileType: string }) =>
       uploadClientFile(clientId, file, fileType),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['client', clientId] })
@@ -276,9 +276,9 @@ export function useClientEarnings(clientId: string) {
 
 export function useAddClientEarning() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ clientId, data }: { clientId: string; data: EarningFormData }) => 
+    mutationFn: ({ clientId, data }: { clientId: string; data: EarningFormData }) =>
       addClientEarning(clientId, data),
     onSuccess: (_, { clientId }) => {
       queryClient.invalidateQueries({ queryKey: ['client-earnings', clientId] })
@@ -290,9 +290,9 @@ export function useAddClientEarning() {
 
 export function useUpdateClientEarning() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EarningFormData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<EarningFormData> }) =>
       updateClientEarning(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-earnings'] })
@@ -302,11 +302,19 @@ export function useUpdateClientEarning() {
 
 export function useDeleteClientEarning() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: deleteClientEarning,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-earnings'] })
     },
+  })
+}
+
+export function useAggregatedEarnings() {
+  return useQuery({
+    queryKey: ['aggregated-earnings'],
+    queryFn: () => import('../api/travelAgent').then(m => m.getAggregatedEarnings()),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

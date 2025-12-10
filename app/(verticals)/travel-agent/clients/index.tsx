@@ -7,8 +7,8 @@ import {
   StyleSheet,
   TextInput,
   RefreshControl,
-  Image,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { BouncingBallsLoader } from '../../../../src/components/ui/BouncingBallsLoader'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -23,35 +23,7 @@ import {
   SearchFilters,
 } from '../../../../src/types/travelAgent'
 
-export default function TravelAgentClientsList() {
-  const insets = useSafeAreaInsets()
-  const [page, setPage] = useState(1)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<ClientStatus | undefined>()
-  const [packageFilter, setPackageFilter] = useState<PackageType | undefined>()
-  const [priorityFilter, setPriorityFilter] = useState<PriorityTag | undefined>()
-  const [showFilters, setShowFilters] = useState(false)
-
-  const filters: SearchFilters = useMemo(() => ({
-    search_term: searchTerm || undefined,
-    status_filter: statusFilter,
-    package_filter: packageFilter,
-    priority_filter: priorityFilter,
-  }), [searchTerm, statusFilter, packageFilter, priorityFilter])
-
-  const { data, isLoading, isError, error, refetch } = useClients(page, 20, filters)
-
-  const clients = data?.data?.data || []
-  const totalPages = data?.data?.total_pages || 1
-
-  if (isLoading && !clients.length) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <BouncingBallsLoader size={12} color="#4F46E5" />
-      </View>
-    )
-  }
-
+const ClientCard = React.memo(({ item, onPress }: { item: TravelClient, onPress: (id: string) => void }) => {
   const getStatusColor = (status: ClientStatus): [string, string] => {
     switch (status) {
       case 'in_progress': return ['#667EEA', '#5A67D8']
@@ -80,10 +52,10 @@ export default function TravelAgentClientsList() {
     }
   }
 
-  const renderClientItem = ({ item }: { item: TravelClient }) => (
+  return (
     <TouchableOpacity
       style={styles.clientCard}
-      onPress={() => router.push(`/(verticals)/travel-agent/clients/${item.id}`)}
+      onPress={() => onPress(item.id)}
       activeOpacity={0.7}
     >
       <LinearGradient
@@ -101,6 +73,8 @@ export default function TravelAgentClientsList() {
               <Image
                 source={{ uri: item.profile_picture_url }}
                 style={styles.profilePicture}
+                contentFit="cover"
+                transition={200}
               />
             ) : (
               <View style={styles.profilePlaceholder}>
@@ -166,6 +140,42 @@ export default function TravelAgentClientsList() {
       </View>
     </TouchableOpacity>
   )
+})
+
+export default function TravelAgentClientsList() {
+  const insets = useSafeAreaInsets()
+  const [page, setPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ClientStatus | undefined>()
+  const [packageFilter, setPackageFilter] = useState<PackageType | undefined>()
+  const [priorityFilter, setPriorityFilter] = useState<PriorityTag | undefined>()
+  const [showFilters, setShowFilters] = useState(false)
+
+  const filters: SearchFilters = useMemo(() => ({
+    search_term: searchTerm || undefined,
+    status_filter: statusFilter,
+    package_filter: packageFilter,
+    priority_filter: priorityFilter,
+  }), [searchTerm, statusFilter, packageFilter, priorityFilter])
+
+  const { data, isLoading, isError, error, refetch } = useClients(page, 20, filters)
+
+  const clients = data?.data?.data || []
+  const totalPages = data?.data?.total_pages || 1
+
+  const handleClientPress = React.useCallback((id: string) => {
+    router.push(`/(verticals)/travel-agent/clients/${id}`)
+  }, [])
+
+  if (isLoading && !clients.length) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <BouncingBallsLoader size={12} color="#4F46E5" />
+      </View>
+    )
+  }
+
+  // Helper functions moved inside ClientCard or not needed here anymore
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -294,7 +304,12 @@ export default function TravelAgentClientsList() {
       {/* Clients List */}
       <FlatList
         data={clients}
-        renderItem={renderClientItem}
+        renderItem={({ item }) => <ClientCard item={item} onPress={handleClientPress} />}
+        initialNumToRender={8}
+        windowSize={5}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
