@@ -8,6 +8,7 @@ import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
+import { useAuth } from '../src/context/AuthContext'
 
 const verticalIcons: Record<string, any> = {
   travel_agent: 'airplane',
@@ -25,6 +26,7 @@ const verticalColors: Record<string, [string, string]> = {
 
 export default function SelectVertical() {
   const insets = useSafeAreaInsets()
+  const { refreshProfile } = useAuth()
   const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -70,6 +72,8 @@ export default function SelectVertical() {
     try {
       setSelecting(true)
       await setSelectedVertical(userId, id)
+      // Refresh auth context to update vertical state
+      await refreshProfile()
       // Navigate to root - the main index will show the appropriate dashboard
       router.replace('/')
     } catch (error) {

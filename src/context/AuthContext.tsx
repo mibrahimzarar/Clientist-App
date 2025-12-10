@@ -114,7 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = async () => {
     if (session?.user) {
-      await fetchProfile(session.user.id)
+      await Promise.all([
+        fetchProfile(session.user.id),
+        fetchVertical(session.user.id)
+      ])
     }
   }
 
