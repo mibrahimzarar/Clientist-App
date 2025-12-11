@@ -7,6 +7,8 @@ import {
     FlatList,
     RefreshControl,
     Alert,
+    Modal,
+    TouchableWithoutFeedback,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -25,6 +27,7 @@ export function FeatureSuggestionsWidget() {
     const [suggestions, setSuggestions] = useState<FeatureSuggestion[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
+    const [selectedSuggestion, setSelectedSuggestion] = useState<FeatureSuggestion | null>(null)
 
     useEffect(() => {
         fetchSuggestions()
@@ -53,7 +56,7 @@ export function FeatureSuggestionsWidget() {
         fetchSuggestions()
     }
 
-    const updateStatus = async (id: string, status: 'implemented' | 'rejected') => {
+    const updateStatus = async (id: string, status: 'pending' | 'implemented' | 'rejected') => {
         try {
             const { error } = await supabase
                 .from('feature_suggestions')
@@ -62,6 +65,7 @@ export function FeatureSuggestionsWidget() {
 
             if (error) throw error
             fetchSuggestions() // Refresh list
+            setSelectedSuggestion(null) // Close modal
         } catch (error) {
             console.error('Error updating suggestion:', error)
             Alert.alert('Error', 'Failed to update suggestion status')
@@ -77,6 +81,7 @@ export function FeatureSuggestionsWidget() {
 
             if (error) throw error
             fetchSuggestions() // Refresh list
+            setSelectedSuggestion(null) // Close modal
         } catch (error) {
             console.error('Error deleting suggestion:', error)
             Alert.alert('Error', 'Failed to delete suggestion')
@@ -84,40 +89,7 @@ export function FeatureSuggestionsWidget() {
     }
 
     const handleSuggestionPress = (suggestion: FeatureSuggestion) => {
-        Alert.alert(
-            'Manage Suggestion',
-            `From: ${suggestion.user_name || suggestion.user_email}\n\n"${suggestion.suggestion_text}"`,
-            [
-                {
-                    text: 'Mark as Implemented',
-                    onPress: () => updateStatus(suggestion.id, 'implemented'),
-                },
-                {
-                    text: 'Reject',
-                    onPress: () => updateStatus(suggestion.id, 'rejected'),
-                    style: 'destructive',
-                },
-                {
-                    text: 'Delete',
-                    onPress: () => {
-                        Alert.alert(
-                            'Confirm Delete',
-                            'Are you sure you want to permanently delete this suggestion?',
-                            [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                    text: 'Delete',
-                                    style: 'destructive',
-                                    onPress: () => deleteSuggestion(suggestion.id),
-                                },
-                            ]
-                        )
-                    },
-                    style: 'destructive',
-                },
-                { text: 'Cancel', style: 'cancel' },
-            ]
-        )
+        setSelectedSuggestion(suggestion)
     }
 
     const getStatusColor = (status: string) => {
@@ -245,6 +217,97 @@ export function FeatureSuggestionsWidget() {
                 scrollEnabled={false}
                 style={styles.list}
             />
+
+            <Modal
+                visible={!!selectedSuggestion}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSelectedSuggestion(null)}
+            >
+                <TouchableWithoutFeedback onPress={() => setSelectedSuggestion(null)}>
+                    <View style={styles.modalOverlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalContent}>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Manage Suggestion</Text>
+                                    <TouchableOpacity onPress={() => setSelectedSuggestion(null)}>
+                                        <Ionicons name="close" size={24} color="#6B7280" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                {selectedSuggestion && (
+                                    <>
+                                        <View style={styles.modalUserInfo}>
+                                            <Text style={styles.modalUserLabel}>From:</Text>
+                                            <Text style={styles.modalUserValue}>
+                                                {selectedSuggestion.user_name || selectedSuggestion.user_email}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.modalSuggestionBox}>
+                                            <Text style={styles.modalSuggestionText}>
+                                                {selectedSuggestion.suggestion_text}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.modalActions}>
+                                            {selectedSuggestion.status !== 'implemented' && (
+                                                <TouchableOpacity 
+                                                    style={[styles.modalButton, styles.buttonImplemented]}
+                                                    onPress={() => updateStatus(selectedSuggestion.id, 'implemented')}
+                                                >
+                                                    <Ionicons name="rocket-outline" size={20} color="#fff" />
+                                                    <Text style={styles.modalButtonText}>Mark as Implemented</Text>
+                                                </TouchableOpacity>
+                                            )}
+
+                                            {selectedSuggestion.status !== 'pending' && (
+                                                <TouchableOpacity 
+                                                    style={[styles.modalButton, styles.buttonPending]}
+                                                    onPress={() => updateStatus(selectedSuggestion.id, 'pending')}
+                                                >
+                                                    <Ionicons name="time-outline" size={20} color="#fff" />
+                                                    <Text style={styles.modalButtonText}>Mark as Pending</Text>
+                                                </TouchableOpacity>
+                                            )}
+
+                                            {selectedSuggestion.status !== 'rejected' && (
+                                                <TouchableOpacity 
+                                                    style={[styles.modalButton, styles.buttonRejected]}
+                                                    onPress={() => updateStatus(selectedSuggestion.id, 'rejected')}
+                                                >
+                                                    <Ionicons name="close-circle-outline" size={20} color="#fff" />
+                                                    <Text style={styles.modalButtonText}>Reject</Text>
+                                                </TouchableOpacity>
+                                            )}
+
+                                            <TouchableOpacity 
+                                                style={[styles.modalButton, styles.buttonDelete]}
+                                                onPress={() => {
+                                                     Alert.alert(
+                                                        'Confirm Delete',
+                                                        'Are you sure you want to permanently delete this suggestion?',
+                                                        [
+                                                            { text: 'Cancel', style: 'cancel' },
+                                                            {
+                                                                text: 'Delete',
+                                                                style: 'destructive',
+                                                                onPress: () => deleteSuggestion(selectedSuggestion.id),
+                                                            },
+                                                        ]
+                                                    )
+                                                }}
+                                            >
+                                                <Ionicons name="trash-outline" size={20} color="#fff" />
+                                                <Text style={styles.modalButtonText}>Delete</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
+                                )}
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </View>
     )
 }
@@ -395,5 +458,94 @@ const styles = StyleSheet.create({
     },
     emptyListContent: {
         flexGrow: 1,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 24,
+        width: '100%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    modalUserInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 8,
+    },
+    modalUserLabel: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    modalUserValue: {
+        fontSize: 14,
+        color: '#111827',
+        fontWeight: '600',
+        flex: 1,
+    },
+    modalSuggestionBox: {
+        backgroundColor: '#F9FAFB',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        maxHeight: 200,
+    },
+    modalSuggestionText: {
+        fontSize: 16,
+        color: '#374151',
+        lineHeight: 24,
+    },
+    modalActions: {
+        gap: 12,
+    },
+    modalButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 12,
+        gap: 8,
+    },
+    modalButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    buttonImplemented: {
+        backgroundColor: '#8B5CF6',
+    },
+    buttonPending: {
+        backgroundColor: '#F59E0B',
+    },
+    buttonRejected: {
+        backgroundColor: '#EF4444',
+    },
+    buttonDelete: {
+        backgroundColor: '#6B7280',
     },
 })

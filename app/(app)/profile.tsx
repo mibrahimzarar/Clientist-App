@@ -319,6 +319,7 @@ export default function Profile() {
               onBlur={() => saveProfile()}
               placeholder={currentVertical === 'service_provider' ? "Enter Name" : "Enter Company Name"}
               placeholderTextColor="#9CA3AF"
+              multiline={true}
             />
 
             {currentVertical === 'service_provider' && (
@@ -331,6 +332,7 @@ export default function Profile() {
                   onBlur={() => saveProfile()}
                   placeholder="e.g. Electrician, Plumber"
                   placeholderTextColor="#9CA3AF"
+                  multiline={true}
                 />
               </>
             )}
